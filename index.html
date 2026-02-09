@@ -593,6 +593,12 @@
         .btn-delete { background: var(--accent); }
 
         /* ========== ESTILOS KANBAN ========== */
+        .solicitudes .column-header { background: #7f8c8d; }
+        :root { --solicitudes: #7f8c8d; }
+        .kanban-container {
+            grid-template-columns: repeat(6, 1fr) !important;
+        }
+
         .kanban-container {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -1072,7 +1078,12 @@
             font-weight: 600;
         }
     </style>
-</head>
+
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    </head>
 <body>
     <!-- ========== PANTALLA DE LOGIN ========== -->
     <div class="login-container" id="loginScreen">
@@ -1213,7 +1224,7 @@
                                 <i class="fas fa-cogs"></i>
                             </div>
                             <div class="stat-info">
-                                <h3>24</h3>
+                                <h3>0</h3>
                                 <p>Piezas Activas</p>
                             </div>
                         </div>
@@ -1222,7 +1233,7 @@
                                 <i class="fas fa-box"></i>
                             </div>
                             <div class="stat-info">
-                                <h3>156</h3>
+                                <h3>0</h3>
                                 <p>En Inventario</p>
                             </div>
                         </div>
@@ -1231,7 +1242,7 @@
                                 <i class="fas fa-exclamation-triangle"></i>
                             </div>
                             <div class="stat-info">
-                                <h3>8</h3>
+                                <h3>0</h3>
                                 <p>Stock Bajo</p>
                             </div>
                         </div>
@@ -1240,7 +1251,7 @@
                                 <i class="fas fa-clock"></i>
                             </div>
                             <div class="stat-info">
-                                <h3>5</h3>
+                                <h3>0</h3>
                                 <p>Pedidos Pendientes</p>
                             </div>
                         </div>
@@ -1266,50 +1277,7 @@
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>PZ-024</td>
-                                        <td>Soporte Motor A</td>
-                                        <td>Acero 1018</td>
-                                        <td>8.5 horas</td>
-                                        <td><span class="badge badge-success">Terminada</span></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="action-btn btn-view" onclick="viewPieza(1)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>PZ-023</td>
-                                        <td>Bracket Montaje</td>
-                                        <td>Aluminio 6061</td>
-                                        <td>5.2 horas</td>
-                                        <td><span class="badge badge-warning">En Proceso</span></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="action-btn btn-view" onclick="viewPieza(2)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>PZ-022</td>
-                                        <td>Placa Base</td>
-                                        <td>Acero Inox 304</td>
-                                        <td>12.0 horas</td>
-                                        <td><span class="badge badge-success">Terminada</span></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="action-btn btn-view" onclick="viewPieza(3)">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
+                                <tbody><tr><td colspan="6" style="text-align:center">Cargando datos...</td></tr></tbody>
                             </table>
                         </div>
                     </div>
@@ -1319,10 +1287,7 @@
                         <div class="section-header">
                             <h2 class="section-title"><i class="fas fa-bell"></i> Alertas de Inventario</h2>
                         </div>
-                        <div class="alertas">
-                            <div class="alerta-item" style="padding: 15px; border-left: 4px solid var(--accent); background: #f8d7da; margin-bottom: 10px; border-radius: 0 5px 5px 0;">
-                                <i class="fas fa-exclamation-circle"></i> <strong>Insertos CNMG 432:</strong> Solo 2 unidades en stock (Mínimo: 5)
-                            </div>
+                        <div class="alertas"><p>Cargando alertas...</p></div>
                             <div class="alerta-item" style="padding: 15px; border-left: 4px solid #f39c12; background: #fff3cd; margin-bottom: 10px; border-radius: 0 5px 5px 0;">
                                 <i class="fas fa-exclamation-triangle"></i> <strong>Brocas Ø6.8mm:</strong> 8 unidades en stock (Mínimo: 10)
                             </div>
@@ -1350,6 +1315,20 @@
 
                     <!-- KANBAN BOARD -->
                     <div class="kanban-container" id="kanbanBoard">
+                        <!-- COLUMNA 0: SOLICITUDES (Desde CMMS) -->
+                        <div class="kanban-column solicitudes">
+                            <div class="column-header">
+                                <div class="column-title">
+                                    <i class="fas fa-download"></i>
+                                    <span>Solicitudes</span>
+                                </div>
+                                <div class="column-count">0</div>
+                            </div>
+                            <div class="column-content" data-status="solicitudes">
+                                <!-- Las solicitudes del CMMS aparecerán aquí -->
+                            </div>
+                        </div>
+
                         <!-- COLUMNA 1: DISEÑO -->
                         <div class="kanban-column design">
                             <div class="column-header">
@@ -1830,612 +1809,473 @@
     </div>
 
     <script>
-        // ========== SISTEMA DE AUTENTICACIÓN ==========
-        // Usuarios válidos (en un sistema real, esto vendría de una base de datos)
-        const usuariosValidos = [
-            { username: 'admin', password: 'admin123', name: 'Administrador', role: 'Administrador del Sistema' },
-            { username: 'operario', password: 'operario123', name: 'Juan Pérez', role: 'Operario CNC' },
-            { username: 'supervisor', password: 'super123', name: 'María García', role: 'Supervisora de Calidad' },
-            { username: 'corinfar', password: 'corinfar2024', name: 'Carlos Rodríguez', role: 'Jefe de Taller Corinfar' }
-        ];
 
-        // Estado de sesión
-        let usuarioLogueado = null;
-        let recordarSesion = false;
+// ========== CONFIGURACIÓN FIREBASE ==========
+const firebaseConfig = {
+    apiKey: "AIzaSy" + "...",
+    authDomain: "gestion-de-mantenimeinto.firebaseapp.com",
+    databaseURL: "https://gestion-de-mantenimeinto-default-rtdb.firebaseio.com",
+    projectId: "gestion-de-mantenimeinto",
+    storageBucket: "gestion-de-mantenimeinto.firebasestorage.app"
+};
 
-        // ========== FUNCIONALIDAD LOGIN ==========
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const remember = document.getElementById('remember').checked;
-            
-            // Validar credenciales
-            const usuario = usuariosValidos.find(u => u.username === username && u.password === password);
-            
-            if (usuario) {
-                // Login exitoso
-                usuarioLogueado = usuario;
-                recordarSesion = remember;
-                
-                // Guardar en localStorage si se seleccionó "Recordarme"
-                if (remember) {
-                    localStorage.setItem('corinfar_session', JSON.stringify({
-                        username: usuario.username,
-                        timestamp: Date.now()
-                    }));
-                } else {
-                    sessionStorage.setItem('corinfar_session', JSON.stringify({
-                        username: usuario.username,
-                        timestamp: Date.now()
-                    }));
-                }
-                
-                // Ocultar login y mostrar sistema principal
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('mainSystem').classList.add('active');
-                
-                // Actualizar información del usuario en sidebar
-                document.getElementById('sidebarUserName').textContent = usuario.name;
-                document.getElementById('sidebarUserRole').textContent = usuario.role;
-                
-                // Inicializar el sistema
-                initSystem();
-                
-                // Mostrar mensaje de bienvenida
-                showNotification(`Bienvenido a Corinfar Taller, ${usuario.name}!`, 'success');
-                
-            } else {
-                // Login fallido
-                const errorElement = document.getElementById('loginError');
-                errorElement.classList.add('show');
-                
-                // Limpiar contraseña
-                document.getElementById('password').value = '';
-                
-                // Quitar error después de 3 segundos
-                setTimeout(() => {
-                    errorElement.classList.remove('show');
-                }, 3000);
-            }
-        });
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
-        // ========== FUNCIÓN DE CERRAR SESIÓN ==========
-        function logout() {
-            if (confirm('¿Está seguro que desea cerrar sesión?')) {
-                // Limpiar almacenamiento
-                localStorage.removeItem('corinfar_session');
-                sessionStorage.removeItem('corinfar_session');
-                
-                // Resetear estado
-                usuarioLogueado = null;
-                recordarSesion = false;
-                
-                // Ocultar sistema y mostrar login
-                document.getElementById('mainSystem').classList.remove('active');
-                document.getElementById('loginScreen').style.display = 'flex';
-                
-                // Limpiar formulario de login
-                document.getElementById('loginForm').reset();
-                
-                // Mostrar mensaje
-                showNotification('Sesión cerrada correctamente', 'info');
-            }
+const PATHS = {
+    workOrders: 'artifacts/default-cmms-app/public/data/workOrders',
+    cmmsInventory: 'artifacts/default-cmms-app/public/data/parts',
+    workshopPieces: 'piezasKanban',
+    workshopInventory: 'taller/inventario',
+    users: 'users'
+};
+
+// ========== VARIABLES DE ESTADO ==========
+let usuarioLogueado = null;
+let piezasKanban = {};
+let tallerInventory = {};
+
+// ========== SISTEMA DE AUTENTICACIÓN ==========
+function login() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    const remember = document.getElementById('remember').checked;
+
+    if (!user || !pass) {
+        showNotification('Por favor ingrese usuario y contraseña', 'error');
+        return;
+    }
+
+    const loginBtn = document.querySelector('.login-btn');
+    loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Accediendo...';
+    loginBtn.disabled = true;
+
+    const persistence = remember ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+
+    auth.setPersistence(persistence).then(() => {
+        return auth.signInWithEmailAndPassword(user, pass);
+    }).then((userCredential) => {
+        const uid = userCredential.user.uid;
+        return db.ref(`${PATHS.users}/${uid}`).once('value');
+    }).then(snapshot => {
+        const userData = snapshot.val();
+        if (userData) {
+            usuarioLogueado = userData;
+            showNotification('Bienvenido al Sistema Corinfar', 'success');
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainSystem').style.display = 'flex';
+            initSystem();
+        } else {
+            throw new Error('Perfil de usuario no encontrado');
         }
+    }).catch(error => {
+        console.error(error);
+        showNotification('Error de acceso: ' + error.message, 'error');
+        loginBtn.innerHTML = 'Iniciar Sesión';
+        loginBtn.disabled = false;
+    });
+}
 
-        // ========== FUNCIÓN DE RECUPERAR CONTRASEÑA ==========
-        function forgotPassword() {
-            const username = document.getElementById('username').value || prompt('Ingrese su nombre de usuario:');
-            
-            if (username) {
-                const usuario = usuariosValidos.find(u => u.username === username);
-                
-                if (usuario) {
-                    // En un sistema real, aquí se enviaría un email
-                    alert(`Se ha enviado un enlace de recuperación a la cuenta asociada con el usuario: ${username}\n\nEn un sistema real, esto enviaría un email al usuario.`);
-                } else {
-                    alert('Usuario no encontrado. Por favor, verifique el nombre de usuario.');
+function logout() {
+    auth.signOut().then(() => {
+        location.reload();
+    });
+}
+
+function checkExistingSession() {
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            db.ref(`${PATHS.users}/${user.uid}`).once('value').then(snapshot => {
+                const userData = snapshot.val();
+                if (userData) {
+                    usuarioLogueado = userData;
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('mainSystem').style.display = 'flex';
+                    initSystem();
                 }
-            }
+            });
         }
+    });
+}
 
-        // ========== VERIFICAR SESIÓN AL CARGAR ==========
-        function checkExistingSession() {
-            // Verificar en sessionStorage primero
-            let sessionData = sessionStorage.getItem('corinfar_session');
-            
-            // Si no hay en sessionStorage, verificar localStorage
-            if (!sessionData) {
-                sessionData = localStorage.getItem('corinfar_session');
-                if (sessionData) {
-                    recordarSesion = true;
-                }
-            }
-            
-            if (sessionData) {
-                try {
-                    const session = JSON.parse(sessionData);
-                    const usuario = usuariosValidos.find(u => u.username === session.username);
-                    
-                    // Verificar si la sesión es reciente (menos de 8 horas)
-                    const sessionAge = Date.now() - session.timestamp;
-                    const maxSessionAge = 8 * 60 * 60 * 1000; // 8 horas en milisegundos
-                    
-                    if (usuario && sessionAge < maxSessionAge) {
-                        // Sesión válida, autologin
-                        usuarioLogueado = usuario;
-                        
-                        // Ocultar login y mostrar sistema principal
-                        document.getElementById('loginScreen').style.display = 'none';
-                        document.getElementById('mainSystem').classList.add('active');
-                        
-                        // Actualizar información del usuario
-                        document.getElementById('sidebarUserName').textContent = usuario.name;
-                        document.getElementById('sidebarUserRole').textContent = usuario.role;
-                        
-                        // Marcar checkbox de recordar si aplica
-                        if (recordarSesion) {
-                            document.getElementById('remember').checked = true;
-                        }
-                        
-                        // Inicializar sistema
-                        initSystem();
-                        
-                        console.log('Sesión restaurada automáticamente - Corinfar Taller');
-                    } else {
-                        // Sesión expirada o inválida, limpiar
-                        localStorage.removeItem('corinfar_session');
-                        sessionStorage.removeItem('corinfar_session');
-                    }
-                } catch (e) {
-                    console.error('Error al restaurar sesión:', e);
-                    // Limpiar datos corruptos
-                    localStorage.removeItem('corinfar_session');
-                    sessionStorage.removeItem('corinfar_session');
-                }
-            }
+// ========== GESTIÓN DE DATOS Y UI ==========
+function initSystem() {
+    // Actualizar Info Usuario
+    const userNameEl = document.getElementById('sidebarUserName');
+    const userRoleEl = document.getElementById('sidebarUserRole');
+    if (userNameEl) userNameEl.textContent = usuarioLogueado.name;
+    if (userRoleEl) userRoleEl.textContent = usuarioLogueado.roleName || 'Administrador';
+
+    // Clear recent pieces table
+    const recentTableBody = document.querySelector('#dashboard tbody');
+    if (recentTableBody) recentTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center">Cargando datos...</td></tr>';
+
+    // Listeners de Firebase
+    db.ref(PATHS.workOrders).on('value', snapshot => {
+        renderSolicitudes(snapshot.val() || {});
+    });
+
+    db.ref(PATHS.workshopPieces).on('value', snapshot => {
+        piezasKanban = snapshot.val() || {};
+        renderWorkshopPieces(piezasKanban);
+        renderRecentPieces(piezasKanban);
+        updateDashboardStats();
+    });
+
+    db.ref(PATHS.workshopInventory).on('value', snapshot => {
+        tallerInventory = snapshot.val() || {};
+        updateInventoryUI();
+    });
+
+    setupNavigation();
+    initKanbanDragAndDrop();
+}
+
+function renderSolicitudes(workOrders) {
+    const container = document.querySelector('[data-status="solicitudes"]');
+    if (!container) return;
+    container.innerHTML = '';
+
+    let pendingCount = 0;
+    Object.keys(workOrders).forEach(id => {
+        const order = workOrders[id];
+        if (order.tallerStatus !== 'accepted') {
+            const card = createCardHTML(id, order, 'solicitudes');
+            container.appendChild(card);
+            pendingCount++;
         }
+    });
+    updateColumnCounts();
 
-        // ========== DATOS DEL SISTEMA ==========
-        const piezasData = {
-            1: {
-                codigo: "PZ-001",
-                nombre: "Engrane Principal",
-                descripcion: "Engrane de precisión para transmisión mecánica con 24 dientes",
-                material: "Acero 4140",
-                tiempo: "6.5 horas",
-                costo: "$85.50",
-                stock: "12 unidades",
-                imagen: "https://via.placeholder.com/400x300/2c3e50/ffffff?text=Engrane+Principal"
-            },
-            2: {
-                codigo: "PZ-002",
-                nombre: "Soporte Eje",
-                descripcion: "Soporte para eje de transmisión con rodamientos incorporados",
-                material: "Aluminio 6061",
-                tiempo: "4.2 horas",
-                costo: "$42.30",
-                stock: "8 unidades",
-                imagen: "https://via.placeholder.com/400x300/3498db/ffffff?text=Soporte+Eje"
-            }
+    // Update Dashboard "Pedidos Pendientes"
+    const stats = document.querySelectorAll('.stat-info h3');
+    if (stats[3]) stats[3].textContent = pendingCount;
+}
+
+function renderWorkshopPieces(pieces) {
+    const columns = ['design', 'fabricacion', 'control', 'terminado', 'entregado'];
+    columns.forEach(status => {
+        const container = document.querySelector(`[data-status="${status}"]`);
+        if (container) container.innerHTML = '';
+    });
+
+    Object.keys(pieces).forEach(id => {
+        const piece = pieces[id];
+        const container = document.querySelector(`[data-status="${piece.estado}"]`);
+        if (container) {
+            const card = createCardHTML(id, piece, piece.estado);
+            container.appendChild(card);
+        }
+    });
+    updateColumnCounts();
+}
+
+function renderRecentPieces(pieces) {
+    const tbody = document.querySelector('#dashboard tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const sortedPieces = Object.keys(pieces)
+        .map(id => ({id, ...pieces[id]}))
+        .sort((a, b) => (b.fechaInicio || '').localeCompare(a.fechaInicio || ''))
+        .slice(0, 5);
+
+    if (sortedPieces.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No hay piezas registradas</td></tr>';
+        return;
+    }
+
+    sortedPieces.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${p.codigo || '---'}</td>
+            <td>${p.nombre || '---'}</td>
+            <td>${p.material || '---'}</td>
+            <td>${p.tiempoEstimado || '---'}</td>
+            <td><span class="badge ${p.estado === 'terminado' ? 'badge-success' : 'badge-warning'}">${p.estado}</span></td>
+            <td>
+                <div class="action-buttons">
+                    <button class="action-btn btn-view" onclick="viewPiezaKanban('${p.id}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function createCardHTML(id, data, type) {
+    const div = document.createElement('div');
+    div.className = `kanban-card ${type}`;
+    div.draggable = true;
+    div.dataset.id = id;
+    div.dataset.type = type === 'solicitudes' ? 'order' : 'piece';
+
+    const priorityClass = `priority-${(data.prioridad || 'media').toLowerCase()}`;
+    const progress = data.progreso || 0;
+    const imgUrl = data.imageUrl || (type === 'solicitudes' ?
+        "https://images.unsplash.com/photo-1537462715879-360eeb61a0ad?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80" :
+        "https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80");
+
+    div.innerHTML = `
+        <div class="card-header">
+            <span class="card-codigo">${data.codigo || 'S/C'}</span>
+            <span class="card-priority ${priorityClass}">${(data.prioridad || 'MEDIA').toUpperCase()}</span>
+        </div>
+        <div class="card-image">
+            <img src="${imgUrl}" alt="${data.nombre || 'Pieza'}">
+            <div class="card-overlay">
+                <span><i class="fas fa-info-circle"></i> Detalle</span>
+            </div>
+        </div>
+        <h3 class="card-title">${data.nombre || data.description || 'Sin Título'}</h3>
+        <div class="card-meta">
+            <div class="meta-item">
+                <i class="fas fa-weight-hanging"></i>
+                <span>${data.material || 'Material N/D'}</span>
+            </div>
+            <div class="meta-item">
+                <i class="fas fa-clock"></i>
+                <span>${data.tiempoEstimado || (data.estimatedTime ? data.estimatedTime + 'h' : '---')}</span>
+            </div>
+        </div>
+        <div class="card-tags">
+            ${data.tags ? data.tags.map(tag => `<span class="tag">${tag}</span>`).join('') : '<span class="tag">General</span>'}
+            ${(data.prioridad === 'ALTA' || data.prioridad === 'alta') ? '<span class="tag urgente">Urgente</span>' : ''}
+        </div>
+        <div class="card-progress">
+            <div class="progress-info">
+                <span>${type === 'control' ? 'Inspección' : 'Progreso'}</span>
+                <span>${progress}%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${progress}%"></div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="card-time">
+                <i class="${type === 'solicitudes' ? 'far fa-calendar' : 'fas fa-user'}"></i>
+                <span>${type === 'solicitudes' ? (data.fecha || 'Pendiente') : (data.operario || 'Sin asignar')}</span>
+            </div>
+            <div class="card-actions">
+                ${type === 'solicitudes' ?
+                    `<button class="action-btn-small" title="Aceptar" onclick="event.stopPropagation(); acceptWorkOrder('${id}')">
+                        <i class="fas fa-check"></i>
+                    </button>` :
+                    `<button class="action-btn-small" onclick="event.stopPropagation(); editPiezaKanban('${id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>`
+                }
+            </div>
+        </div>
+    `;
+
+    div.addEventListener('dragstart', handleDragStart);
+    div.addEventListener('dragend', handleDragEnd);
+    div.onclick = () => type === 'solicitudes' ? viewWorkOrder(id) : viewPiezaKanban(id);
+
+    return div;
+}
+
+// ========== ACCIONES KANBAN ==========
+function acceptWorkOrder(id) {
+    db.ref(`${PATHS.workOrders}/${id}`).once('value').then(snapshot => {
+        const order = snapshot.val();
+        if (!order) return;
+
+        const newPiece = {
+            nombre: order.nombre || order.description,
+            codigo: order.codigo || 'PZ-CMMS',
+            material: order.material || 'Por definir',
+            prioridad: order.prioridad || 'media',
+            estado: 'design',
+            progreso: 0,
+            imageUrl: order.imageUrl || null,
+            cmmsId: id,
+            fechaInicio: new Date().toLocaleDateString()
         };
 
-        const piezasKanban = {
-            1: { 
-                codigo: 'PZ-025', 
-                nombre: 'Soporte Motor Industrial',
-                estado: 'design',
-                material: 'Acero 1018',
-                tiempoEstimado: 8,
-                tiempoReal: 0,
-                prioridad: 'alta',
-                progreso: 30,
-                operario: '',
-                iniciado: '15 Mar'
-            },
-            3: { 
-                codigo: 'PZ-023', 
-                nombre: 'Engrane Helicoidal',
-                estado: 'fabricacion',
-                material: 'Acero 4140',
-                tiempoEstimado: 8,
-                tiempoReal: 6.5,
-                prioridad: 'alta',
-                progreso: 80,
-                operario: 'Carlos',
-                iniciado: '10 Mar'
-            },
-            5: { 
-                codigo: 'PZ-021', 
-                nombre: 'Placa Base CNC',
-                estado: 'control',
-                material: 'Aluminio 7075',
-                tiempoEstimado: 12,
-                tiempoReal: 10.5,
-                prioridad: 'media',
-                progreso: 60,
-                operario: 'Roberto',
-                iniciado: '5 Mar'
-            },
-            6: { 
-                codigo: 'PZ-020', 
-                nombre: 'Caja Reductora',
-                estado: 'terminado',
-                material: 'Acero 1045',
-                tiempoEstimado: 16,
-                tiempoReal: 15,
-                prioridad: 'baja',
-                progreso: 100,
-                operario: '',
-                iniciado: '1 Mar',
-                terminado: '20 Mar',
-                stock: 5
-            },
-            7: { 
-                codigo: 'PZ-019', 
-                nombre: 'Soporte Motor Diesel',
-                estado: 'entregado',
-                material: 'Acero 1018',
-                tiempoEstimado: 10,
-                tiempoReal: 9,
-                prioridad: 'baja',
-                progreso: 100,
-                operario: '',
-                iniciado: '5 Mar',
-                entregado: '18 Mar',
-                factura: '#2456'
+        const newRef = db.ref(PATHS.workshopPieces).push();
+        return Promise.all([
+            newRef.set(newPiece),
+            db.ref(`${PATHS.workOrders}/${id}`).update({
+                tallerStatus: 'accepted',
+                tallerPieceId: newRef.key,
+                status: 'En Proceso (Taller)'
+            })
+        ]);
+    }).then(() => {
+        showNotification('Trabajo aceptado y movido a Diseño', 'success');
+    });
+}
+
+function handleDragStart(e) {
+    e.dataTransfer.setData('text/plain', e.target.dataset.id);
+    e.dataTransfer.setData('type', e.target.dataset.type);
+    setTimeout(() => e.target.classList.add('dragging'), 0);
+}
+
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+function initKanbanDragAndDrop() {
+    const columns = document.querySelectorAll('.column-content');
+    columns.forEach(column => {
+        column.addEventListener('dragover', e => {
+            e.preventDefault();
+            column.classList.add('drag-over');
+        });
+        column.addEventListener('dragleave', () => {
+            column.classList.remove('drag-over');
+        });
+        column.addEventListener('drop', e => {
+            e.preventDefault();
+            column.classList.remove('drag-over');
+            const id = e.dataTransfer.getData('text/plain');
+            const type = e.dataTransfer.getData('type');
+            const newStatus = column.dataset.status;
+
+            if (type === 'order' && newStatus === 'design') {
+                acceptWorkOrder(id);
+            } else if (type === 'piece') {
+                updatePieceStatus(id, newStatus);
             }
+        });
+    });
+}
+
+function updatePieceStatus(id, newStatus) {
+    const updates = { estado: newStatus };
+
+    if (newStatus === 'terminado') {
+        updates.progreso = 100;
+        syncWithCMMSInventory(id);
+    }
+
+    db.ref(`${PATHS.workshopPieces}/${id}`).update(updates);
+}
+
+function syncWithCMMSInventory(pieceId) {
+    const piece = piezasKanban[pieceId];
+    if (!piece) return;
+
+    const cmmsPart = {
+        name: piece.nombre,
+        code: piece.codigo,
+        material: piece.material,
+        status: 'Available',
+        origin: 'Workshop',
+        addedAt: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    db.ref(PATHS.cmmsInventory).push(cmmsPart);
+}
+
+// ========== OTROS COMPONENTES UI ==========
+function showNotification(msg, type) {
+    const notif = document.createElement('div');
+    notif.className = 'notification-toast';
+    notif.style.position = 'fixed';
+    notif.style.top = '20px';
+    notif.style.right = '20px';
+    notif.style.padding = '15px 25px';
+    notif.style.borderRadius = '5px';
+    notif.style.color = 'white';
+    notif.style.zIndex = '9999';
+    notif.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    notif.style.background = type === 'success' ? '#27ae60' : '#e74c3c';
+    notif.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), 3000);
+}
+
+function setupNavigation() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.onclick = (e) => {
+            e.preventDefault();
+            const target = link.getAttribute('data-page');
+            if (!target) return;
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            const targetPage = document.getElementById(target);
+            if (targetPage) targetPage.classList.add('active');
+            navLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            
+            if (target === 'inventario') updateInventoryUI();
         };
+    });
+}
 
-        // ========== NAVEGACIÓN ENTRE PÁGINAS ==========
-        function setupNavigation() {
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const page = this.getAttribute('data-page');
-                    
-                    // Actualizar navegación activa
-                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Mostrar página correspondiente
-                    document.querySelectorAll('.page-content').forEach(content => {
-                        content.classList.remove('active');
-                    });
-                    document.getElementById(page).classList.add('active');
-                    
-                    // Actualizar título de página
-                    const pageTitles = {
-                        'dashboard': `Dashboard - Corinfar Taller`,
-                        'kanban': `Tablero Kanban - Corinfar Taller`,
-                        'piezas': `Piezas Fabricadas - Corinfar Taller`,
-                        'inventario': `Inventario de Materiales - Corinfar Taller`,
-                        'herramientas': `Gestión de Herramientas - Corinfar Taller`,
-                        'planos': `Gestión de Planos - Corinfar Taller`,
-                        'reportes': `Reportes y Estadísticas - Corinfar Taller`
-                    };
-                    
-                    const titleElement = document.querySelector('.page-title');
-                    const icon = this.querySelector('i').className;
-                    titleElement.innerHTML = `<i class="${icon}"></i> ${pageTitles[page]}`;
-                    
-                    // Inicializar funcionalidades específicas de la página
-                    if (page === 'kanban') {
-                        initKanban();
-                    }
-                });
-            });
-        }
+function updateColumnCounts() {
+    document.querySelectorAll('.kanban-column').forEach(col => {
+        const count = col.querySelectorAll('.kanban-card').length;
+        const badge = col.querySelector('.column-count');
+        if (badge) badge.textContent = count;
+    });
+}
 
-        // Función para navegación programática
-        function navigateTo(page) {
-            document.querySelector(`[data-page="${page}"]`).click();
-        }
+function updateDashboardStats() {
+    const pieces = Object.values(piezasKanban);
+    const active = pieces.filter(p => p.estado !== 'terminado' && p.estado !== 'entregado').length;
+    const finished = pieces.filter(p => p.estado === 'terminado').length;
 
-        // ========== FUNCIONALIDADES DEL KANBAN ==========
-        function initKanban() {
-            // Drag and Drop
-            document.querySelectorAll('.kanban-card').forEach(card => {
-                card.addEventListener('dragstart', dragStart);
-            });
+    const stats = document.querySelectorAll('.stat-info h3');
+    if (stats[0]) stats[0].textContent = active;
+    if (stats[1]) stats[1].textContent = finished;
 
-            document.querySelectorAll('.column-content').forEach(column => {
-                column.addEventListener('dragover', dragOver);
-                column.addEventListener('drop', drop);
-            });
-            
-            // Busqueda
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', function(e) {
-                    const searchTerm = e.target.value.toLowerCase();
-                    document.querySelectorAll('.kanban-card').forEach(card => {
-                        const title = card.querySelector('.card-title').textContent.toLowerCase();
-                        const codigo = card.querySelector('.card-codigo').textContent.toLowerCase();
-                        const material = card.querySelector('.meta-item span').textContent.toLowerCase();
-                        
-                        if (title.includes(searchTerm) || codigo.includes(searchTerm) || material.includes(searchTerm)) {
-                            card.style.display = 'block';
-                        } else {
-                            card.style.display = 'none';
-                        }
-                    });
-                });
-            }
-            
-            updateColumnCounts();
-        }
+    // Note: Solicitudes are updated in renderSolicitudes
+    // Stock Bajo is updated in updateInventoryUI
+}
 
-        let draggedCard = null;
+function updateInventoryUI() {
+    const container = document.querySelector('#inventario .section');
+    const alertContainer = document.querySelector('.alertas');
+    const stats = document.querySelectorAll('.stat-info h3');
 
-        function dragStart(e) {
-            draggedCard = this;
-            this.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', this.dataset.id);
-        }
+    let html = '<div class="table-responsive"><table><thead><tr><th>Nombre</th><th>Categoría</th><th>Stock</th></tr></thead><tbody><tr><td colspan="6" style="text-align:center">Cargando datos...</td></tr></tbody></table></div>';
 
-        function dragOver(e) {
+    if (container) container.innerHTML = html;
+    if (alertContainer) alertContainer.innerHTML = alertsHtml || '<p>No hay alertas de inventario</p>';
+    if (stats[2]) stats[2].textContent = lowStockCount;
+}
+
+function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = 'none';
+}
+
+function showModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.style.display = 'block';
+}
+
+function viewWorkOrder(id) { alert('Detalle de orden: ' + id); }
+function viewPiezaKanban(id) { alert('Detalle de pieza: ' + id); }
+function editPiezaKanban(id) { alert('Editar pieza: ' + id); }
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Limpiar tarjetas estáticas
+    const columns = ['design', 'fabricacion', 'control', 'terminado', 'entregado'];
+    columns.forEach(status => {
+        const container = document.querySelector(`[data-status="${status}"]`);
+        if (container) container.innerHTML = '';
+    });
+
+    checkExistingSession();
+
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.onsubmit = (e) => {
             e.preventDefault();
-            this.classList.add('drop-zone');
-        }
+            login();
+        };
+    }
+});
 
-        function drop(e) {
-            e.preventDefault();
-            this.classList.remove('drop-zone');
-            
-            if (draggedCard) {
-                const newStatus = this.dataset.status;
-                
-                // Actualizar estado en datos
-                const piezaId = draggedCard.dataset.id;
-                if (piezasKanban[piezaId]) {
-                    piezasKanban[piezaId].estado = newStatus;
-                    
-                    // Si se mueve a terminado, registrar fecha
-                    if (newStatus === 'terminado') {
-                        piezasKanban[piezaId].terminado = new Date().toLocaleDateString('es-ES', { 
-                            day: 'numeric', 
-                            month: 'short' 
-                        });
-                    }
-                    
-                    // Si se mueve a entregado, registrar fecha
-                    if (newStatus === 'entregado') {
-                        piezasKanban[piezaId].entregado = new Date().toLocaleDateString('es-ES', { 
-                            day: 'numeric', 
-                            month: 'short' 
-                        });
-                    }
-                }
-                
-                // Mover la tarjeta visualmente
-                this.appendChild(draggedCard);
-                draggedCard.classList.remove('dragging');
-                
-                // Actualizar contadores de columnas
-                updateColumnCounts();
-                
-                // Mostrar notificación
-                showNotification(`Pieza movida a ${getStatusName(newStatus)}`, 'info');
-            }
-        }
-
-        // ========== FUNCIONES COMUNES ==========
-        function showModal(modalId) {
-            document.getElementById(`modal-${modalId}`).style.display = 'flex';
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        function showNotification(message, type = 'info') {
-            // Crear notificación
-            const notification = document.createElement('div');
-            
-            // Configurar colores según tipo
-            let bgColor, icon;
-            switch(type) {
-                case 'success':
-                    bgColor = '#2ecc71';
-                    icon = 'fas fa-check-circle';
-                    break;
-                case 'error':
-                    bgColor = '#e74c3c';
-                    icon = 'fas fa-exclamation-circle';
-                    break;
-                case 'warning':
-                    bgColor = '#f39c12';
-                    icon = 'fas fa-exclamation-triangle';
-                    break;
-                default:
-                    bgColor = '#3498db';
-                    icon = 'fas fa-info-circle';
-            }
-            
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: ${bgColor};
-                color: white;
-                padding: 15px 25px;
-                border-radius: 10px;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                z-index: 2000;
-                animation: slideIn 0.3s ease;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            `;
-            
-            notification.innerHTML = `
-                <i class="${icon}"></i> ${message}
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Eliminar después de 3 segundos
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
-
-        // ========== FUNCIONES PARA PIEZAS ==========
-        function viewPieza(id) {
-            const pieza = piezasData[id];
-            if (!pieza) return;
-            
-            // Actualizar datos en el modal
-            document.getElementById('modalPiezaNombre').textContent = pieza.nombre;
-            document.getElementById('detalle-codigo').textContent = pieza.codigo;
-            document.getElementById('detalle-material').textContent = pieza.material;
-            document.getElementById('detalle-tiempo').textContent = pieza.tiempo;
-            document.getElementById('detalle-prioridad').textContent = 'Media';
-            
-            showModal('pieza-detalle');
-        }
-
-        // ========== FUNCIONES PARA KANBAN ==========
-        function viewPiezaKanban(id) {
-            const pieza = piezasKanban[id];
-            if (!pieza) return;
-            
-            // Actualizar datos en el modal
-            document.getElementById('modalPiezaNombre').textContent = pieza.nombre;
-            document.getElementById('detalle-codigo').textContent = pieza.codigo;
-            document.getElementById('detalle-material').textContent = pieza.material;
-            document.getElementById('detalle-tiempo').textContent = `${pieza.tiempoReal || 0}h / ${pieza.tiempoEstimado}h`;
-            document.getElementById('detalle-prioridad').textContent = pieza.prioridad.toUpperCase();
-            
-            showModal('pieza-detalle');
-        }
-
-        function editPiezaKanban(id) {
-            const pieza = piezasKanban[id];
-            alert(`Editando pieza: ${pieza.nombre} (${pieza.codigo})\n\nAbriría formulario de edición con todos los datos.`);
-        }
-
-        function uploadPlano(id) {
-            alert('Subir plano para pieza ' + id + '\n\nSe abriría selector de archivos para subir PDF/DWG/Imagen');
-        }
-
-        function registrarTiempoKanban(id) {
-            const tiempo = prompt('Ingrese tiempo trabajado (horas):');
-            if (tiempo && !isNaN(tiempo)) {
-                piezasKanban[id].tiempoReal = parseFloat(tiempo);
-                showNotification(`Tiempo registrado: ${tiempo} horas`, 'success');
-            }
-        }
-
-        function addCheck(id) {
-            alert('Agregar chequeo de calidad para pieza ' + id);
-        }
-
-        function moverAEntregado(id) {
-            if (confirm('¿Mover pieza a entregado y generar factura?')) {
-                piezasKanban[id].estado = 'entregado';
-                piezasKanban[id].entregado = new Date().toLocaleDateString('es-ES', { 
-                    day: 'numeric', 
-                    month: 'short' 
-                });
-                updateColumnCounts();
-                showNotification('Pieza marcada como entregada', 'success');
-            }
-        }
-
-        function verFactura(id) {
-            alert('Mostrando factura de la pieza ' + id);
-        }
-
-        function updateColumnCounts() {
-            const columns = document.querySelectorAll('.kanban-column');
-            columns.forEach(column => {
-                const status = column.classList[1]; // design, fabricacion, etc.
-                const count = column.querySelectorAll('.kanban-card').length;
-                const countElement = column.querySelector('.column-count');
-                if (countElement) {
-                    countElement.textContent = count;
-                }
-            });
-        }
-
-        function getStatusName(status) {
-            const names = {
-                'design': 'Diseño',
-                'fabricacion': 'Fabricación',
-                'control': 'Control Calidad',
-                'terminado': 'Terminado',
-                'entregado': 'Entregado'
-            };
-            return names[status] || status;
-        }
-
-        // ========== FORMULARIO NUEVA PIEZA ==========
-        document.getElementById('form-nueva-pieza').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const codigo = document.getElementById('codigo').value;
-            const nombre = document.getElementById('nombre').value;
-            
-            alert(`Pieza "${nombre}" (${codigo}) registrada exitosamente en Corinfar Taller.\n\nLa pieza ha sido agregada al sistema.`);
-            
-            closeModal('modal-nueva-pieza');
-            this.reset();
-        });
-
-        // ========== INICIALIZACIÓN DEL SISTEMA ==========
-        function initSystem() {
-            console.log('Sistema de Gestión Corinfar Taller - INICIADO');
-            console.log('Usuario:', usuarioLogueado.name);
-            
-            // Configurar navegación
-            setupNavigation();
-            
-            // Inicializar Kanban si está activo
-            if (document.getElementById('kanban').classList.contains('active')) {
-                initKanban();
-            }
-            
-            // Cerrar modal al hacer click fuera
-            window.onclick = function(event) {
-                if (event.target.classList.contains('modal')) {
-                    event.target.style.display = 'none';
-                }
-            };
-            
-            // Cerrar modal con ESC
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    document.querySelectorAll('.modal').forEach(modal => {
-                        modal.style.display = 'none';
-                    });
-                }
-            });
-        }
-
-        // ========== INICIALIZACIÓN AL CARGAR ==========
-        document.addEventListener('DOMContentLoaded', function() {
-            // Verificar si hay sesión existente
-            checkExistingSession();
-            
-            // Configurar tecla Enter en formulario de login
-            document.getElementById('loginForm').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    document.querySelector('.login-btn').click();
-                }
-            });
-            
-            // Enfoque automático en usuario al cargar
-            document.getElementById('username').focus();
-            
-            // Agregar créditos en consola
-            console.log('%c⚙️ Corinfar Taller - Sistema de Gestión ⚙️', 'color: #3498db; font-size: 16px; font-weight: bold;');
-            console.log('%cVersión 2.0 | © 2024 Corinfar Taller', 'color: #2c3e50;');
-        });
-    </script>
+</script>
 </body>
 </html>
