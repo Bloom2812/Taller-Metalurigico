@@ -226,7 +226,8 @@
         .container {
             display: flex;
             min-height: 100vh;
-            max-width: 2000px;
+            width: 100%;
+            max-width: 100%;
             margin: 0 auto;
         }
 
@@ -344,11 +345,12 @@
             flex: 1;
             min-height: 100vh;
             width: 100%;
+            padding: 10px;
         }
 
         .page-content {
             display: none;
-            min-height: 100vh;
+            min-height: calc(100vh - 20px);
         }
 
         .page-content.active {
@@ -358,8 +360,9 @@
         /* HEADER COMÚN */
         .page-header {
             background: white;
-            padding: 15px 5px;
+            padding: 15px 20px;
             margin-bottom: 15px;
+            border-radius: 10px;
             box-shadow: var(--shadow);
             display: flex;
             justify-content: space-between;
@@ -475,7 +478,6 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
             margin-bottom: 15px;
-            padding: 0 5px;
         }
 
         .stat-card {
@@ -527,7 +529,7 @@
             border-radius: 10px;
             box-shadow: var(--shadow);
             padding: 15px;
-            margin: 0 5px 15px;
+            margin-bottom: 15px;
         }
 
         .dashboard-sections {
@@ -646,8 +648,7 @@
             display: grid;
             grid-template-columns: repeat(6, 1fr);
             gap: 10px;
-            height: calc(100vh - 180px);
-            padding: 0 5px;
+            height: calc(100vh - 200px);
             margin-bottom: 15px;
         }
 
@@ -1029,15 +1030,23 @@
         }
 
         @media (max-width: 768px) {
+            .main-content {
+                padding: 10px;
+            }
+
             .kanban-container {
                 grid-template-columns: 1fr;
-                padding: 0 5px;
+                height: auto;
             }
             
+            .page-title {
+                font-size: 1.4rem;
+            }
+
             .page-header {
                 flex-direction: column;
                 align-items: stretch;
-                padding: 10px 5px;
+                padding: 15px;
             }
             
             .header-controls {
@@ -1051,11 +1060,10 @@
             
             .stats-cards {
                 grid-template-columns: 1fr;
-                padding: 0 5px;
             }
 
             .section {
-                margin: 0 5px 10px;
+                margin-bottom: 10px;
                 padding: 10px;
             }
             
@@ -2004,6 +2012,21 @@ function checkExistingSession() {
 }
 
 // ========== GESTIÓN DE DATOS Y UI ==========
+function navigateTo(pageId) {
+    document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) targetPage.classList.add('active');
+
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('data-page') === pageId) {
+            link.classList.add('active');
+        }
+    });
+
+    if (pageId === 'inventario') updateInventoryUI();
+}
+
 function initSystem() {
     // Actualizar Info Usuario
     const userNameEl = document.getElementById('sidebarUserName');
@@ -2331,13 +2354,8 @@ function setupNavigation() {
             e.preventDefault();
             const target = link.getAttribute('data-page');
             if (!target) return;
-            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
-            const targetPage = document.getElementById(target);
-            if (targetPage) targetPage.classList.add('active');
-            navLinks.forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
             
-            if (target === 'inventario') updateInventoryUI();
+            navigateTo(target);
 
             // Close sidebar on mobile after clicking a link
             if (window.innerWidth <= 1200) {
