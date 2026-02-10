@@ -1922,7 +1922,7 @@ const firebaseConfig = {
     projectId: "gestion-de-mantenimeinto",
     storageBucket: "gestion-de-mantenimeinto.firebasestorage.app",
     messagingSenderId: "1098054951785",
-    appId: "1:1098054951785:web:8889018ed107a50e74d3f8",
+    appId: "1:1098054951785:web:5522bbfb185a05f674d3f8", // Actualizado según screenshot
     measurementId: "G-JN15RHJD2C"
 };
 
@@ -2020,13 +2020,33 @@ function toggleSidebar() {
 function checkExistingSession() {
     auth.onAuthStateChanged(user => {
         if (user) {
+            console.log("Sesión detectada para:", user.email);
             firestore.collection(PATHS.users).doc(user.uid).get().then(doc => {
                 if (doc.exists) {
                     usuarioLogueado = doc.data();
-                    document.getElementById('loginScreen').style.display = 'none';
-                    document.getElementById('mainSystem').style.display = 'flex';
-                    initSystem();
+                } else {
+                    console.log("Perfil no encontrado, creando perfil temporal");
+                    usuarioLogueado = {
+                        uid: user.uid,
+                        email: user.email,
+                        name: user.email.split('@')[0],
+                        roleName: 'Operario Taller'
+                    };
                 }
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainSystem').style.display = 'flex';
+                initSystem();
+            }).catch(error => {
+                console.error("Error al recuperar perfil:", error);
+                usuarioLogueado = {
+                    uid: user.uid,
+                    email: user.email,
+                    name: user.email.split('@')[0],
+                    roleName: 'Operario Taller'
+                };
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainSystem').style.display = 'flex';
+                initSystem();
             });
         }
     });
@@ -2127,13 +2147,25 @@ function renderSolicitudes(workOrders) {
 }
 
 function renderMachinesList() {
+    console.log("Actualizando lista de máquinas...", maquinas);
     const select = document.getElementById('maquina-vinculo');
-    if (!select) return;
+    if (!select) {
+        console.error("No se encontró el select 'maquina-vinculo'");
+        return;
+    }
 
     const currentValue = select.value;
     select.innerHTML = '<option value="">Seleccionar máquina...</option>';
 
-    const sortedMachines = Object.keys(maquinas)
+    const machineEntries = Object.keys(maquinas);
+    console.log(`Encontradas ${machineEntries.length} máquinas`);
+
+    if (machineEntries.length === 0) {
+        select.innerHTML = '<option value="">No hay máquinas disponibles</option>';
+        return;
+    }
+
+    const sortedMachines = machineEntries
         .map(id => ({id, ...maquinas[id]}))
         .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
@@ -2490,7 +2522,13 @@ function closeModal(id) {
 
 function showModal(id) {
     const modal = document.getElementById(id);
-    if (modal) modal.style.display = 'block';
+    if (modal) {
+        modal.style.display = 'flex';
+        // Si el modal es el de nueva pieza, asegurar que las máquinas estén cargadas
+        if (id === 'modal-nueva-pieza') {
+            renderMachinesList();
+        }
+    }
 }
 
 function viewWorkOrder(id) { alert('Detalle de orden: ' + id); }
