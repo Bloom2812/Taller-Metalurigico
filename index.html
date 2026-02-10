@@ -1812,11 +1812,14 @@
 
 // ========== CONFIGURACIÓN FIREBASE ==========
 const firebaseConfig = {
-    apiKey: "AIzaSy" + "...",
+    apiKey: "AIzaSyCnAxQqlkVzEPpcwXLO-MhIfK0517lSvT4",
     authDomain: "gestion-de-mantenimeinto.firebaseapp.com",
     databaseURL: "https://gestion-de-mantenimeinto-default-rtdb.firebaseio.com",
     projectId: "gestion-de-mantenimeinto",
-    storageBucket: "gestion-de-mantenimeinto.firebasestorage.app"
+    storageBucket: "gestion-de-mantenimeinto.firebasestorage.app",
+    messagingSenderId: "1098054951785",
+    appId: "1:1098054951785:web:8889018ed107a50e74d3f8",
+    measurementId: "G-JN15RHJD2C"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -1838,13 +1841,18 @@ let tallerInventory = {};
 
 // ========== SISTEMA DE AUTENTICACIÓN ==========
 function login() {
-    const user = document.getElementById('username').value;
+    let user = document.getElementById('username').value;
     const pass = document.getElementById('password').value;
     const remember = document.getElementById('remember').checked;
 
     if (!user || !pass) {
         showNotification('Por favor ingrese usuario y contraseña', 'error');
         return;
+    }
+
+    // Auto-completar dominio si no es un correo
+    if (user && !user.includes('@')) {
+        user = `${user}@corinfar.com`;
     }
 
     const loginBtn = document.querySelector('.login-btn');
