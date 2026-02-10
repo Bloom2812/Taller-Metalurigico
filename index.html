@@ -1931,11 +1931,11 @@ const auth = firebase.auth();
 const firestore = firebase.firestore();
 
 const PATHS = {
-    workOrders: 'workOrders',
-    parts: 'parts',
+    workOrders: 'public/data/workOrders',
+    parts: 'public/data/parts',
     workshopPieces: 'piezasTaller',
     users: 'users',
-    machines: 'machines'
+    machines: 'public/data/machines'
 };
 
 // ========== VARIABLES DE ESTADO ==========
@@ -2078,15 +2078,22 @@ function initSystem() {
     // Listeners de Firestore
     firestore.collection(PATHS.workOrders)
         .onSnapshot(snapshot => {
+            console.log("WorkOrders recibidas:", snapshot.size);
             const workOrders = {};
             snapshot.forEach(doc => {
                 workOrders[doc.id] = doc.data();
             });
             renderSolicitudes(workOrders);
-        }, error => console.error("Error en workOrders:", error));
+        }, error => {
+            console.error("Error en workOrders:", error);
+            if (error.code === 'permission-denied') {
+                showNotification("Acceso denegado a Solicitudes CMMS", "error");
+            }
+        });
 
     firestore.collection(PATHS.workshopPieces)
         .onSnapshot(snapshot => {
+            console.log("Piezas Taller recibidas:", snapshot.size);
             piezasKanban = {};
             snapshot.forEach(doc => {
                 piezasKanban[doc.id] = doc.data();
@@ -2098,21 +2105,28 @@ function initSystem() {
 
     firestore.collection(PATHS.parts)
         .onSnapshot(snapshot => {
+            console.log("Inventario CMMS recibido:", snapshot.size);
             tallerInventory = {};
             snapshot.forEach(doc => {
                 tallerInventory[doc.id] = doc.data();
             });
             updateInventoryUI();
-        }, error => console.error("Error en parts:", error));
+        }, error => {
+            console.error("Error en parts:", error);
+        });
 
     firestore.collection(PATHS.machines)
         .onSnapshot(snapshot => {
+            console.log("Máquinas recibidas de Firestore:", snapshot.size);
             maquinas = {};
             snapshot.forEach(doc => {
                 maquinas[doc.id] = doc.data();
             });
             renderMachinesList();
-        }, error => console.error("Error en machines:", error));
+        }, error => {
+            console.error("Error en machines:", error);
+            showNotification("Error cargando máquinas: " + error.message, "error");
+        });
 
     setupNavigation();
     initKanbanDragAndDrop();
@@ -2385,7 +2399,7 @@ function updatePieceStatus(id, newStatus) {
     if (newStatus === 'terminado') {
         updates.progreso = 100;
         updates.fechaFin = new Date().toLocaleDateString();
-        syncWithCMMSInventory(id);
+        syncWithCMMSInventory(id, 1);
     }
 
     docRef.update(updates).catch(error => {
@@ -2393,28 +2407,70 @@ function updatePieceStatus(id, newStatus) {
     });
 }
 
-function syncWithCMMSInventory(pieceId) {
-    const piece = piezasKanban[pieceId];
+async function syncWithCMMSInventory(pieceId, increment = 0) {
+    console.log(`Sincronizando ${pieceId} con CMMS. Incremento: ${increment}`);
+
+    // Obtener datos de la pieza (desde el estado local o Firestore)
+    let piece = piezasKanban[pieceId];
+    if (!piece) {
+        try {
+            const doc = await firestore.collection(PATHS.workshopPieces).doc(pieceId).get();
+            if (doc.exists) piece = doc.data();
+        } catch (e) { console.error(e); }
+    }
+
     if (!piece) return;
 
-    const cmmsPart = {
-        name: piece.nombre,
-        code: piece.codigo,
-        material: piece.material,
-        status: 'Available',
-        origin: 'Workshop',
-        addedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        workshopPieceId: pieceId,
-        machineId: piece.maquinaId || null,
-        stockMinimo: piece.stockMinimo || 0,
-        stockMaximo: piece.stockMaximo || 0
-    };
+    try {
+        const partsRef = firestore.collection(PATHS.parts);
+        // Buscar si ya existe por código o nombre
+        const queryByCode = await partsRef.where('code', '==', piece.codigo).get();
+        let targetDocId = null;
+        let currentStock = 0;
 
-    firestore.collection(PATHS.parts).add(cmmsPart).then(() => {
-        showNotification('Pieza sincronizada con inventario CMMS', 'success');
-    }).catch(error => {
+        if (!queryByCode.empty) {
+            targetDocId = queryByCode.docs[0].id;
+            currentStock = queryByCode.docs[0].data().stock || 0;
+        } else {
+            const queryByName = await partsRef.where('name', '==', piece.nombre).get();
+            if (!queryByName.empty) {
+                targetDocId = queryByName.docs[0].id;
+                currentStock = queryByName.docs[0].data().stock || 0;
+            }
+        }
+
+        const partData = {
+            name: piece.nombre,
+            code: piece.codigo,
+            description: piece.descripcion || '',
+            material: piece.material,
+            status: 'Available',
+            origin: 'Workshop',
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+            workshopPieceId: pieceId,
+            machineId: piece.maquinaId || null,
+            stockMinimo: parseInt(piece.stockMinimo) || 0,
+            stockMaximo: parseInt(piece.stockMaximo) || 0,
+            stock: currentStock + increment
+        };
+
+        if (targetDocId) {
+            await partsRef.doc(targetDocId).update(partData);
+            console.log("Pieza actualizada en inventario CMMS");
+        } else {
+            await partsRef.add({
+                ...partData,
+                addedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            console.log("Pieza creada en inventario CMMS");
+        }
+
+        if (increment > 0) {
+            showNotification('Stock actualizado en inventario CMMS', 'success');
+        }
+    } catch (error) {
         console.error("Error al sincronizar con CMMS:", error);
-    });
+    }
 }
 
 // ========== OTROS COMPONENTES UI ==========
@@ -2571,7 +2627,9 @@ function saveNewPiece() {
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
     saveBtn.disabled = true;
 
+    let createdPieceId = null;
     firestore.collection(PATHS.workshopPieces).add(newPiece).then(docRef => {
+        createdPieceId = docRef.id;
         // Vincular en el documento de la máquina como repuesto
         return firestore.collection(PATHS.machines).doc(maquinaId).set({
             spareParts: firebase.firestore.FieldValue.arrayUnion({
@@ -2580,6 +2638,9 @@ function saveNewPiece() {
                 code: codigo
             })
         }, { merge: true });
+    }).then(() => {
+        // Registrar en CMMS inmediatamente con stock 0
+        return syncWithCMMSInventory(createdPieceId, 0);
     }).then(() => {
         showNotification('Pieza registrada y vinculada exitosamente', 'success');
         closeModal('modal-nueva-pieza');
