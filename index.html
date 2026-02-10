@@ -1864,20 +1864,39 @@
                         <textarea id="descripcion" placeholder="Descripción detallada de la pieza..." style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px; min-height: 100px;"></textarea>
                     </div>
 
-                    <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
                         <div style="flex: 1;">
                             <label for="material" style="display: block; margin-bottom: 8px; font-weight: 600;">Material Principal *</label>
                             <select id="material" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
                                 <option value="">Seleccionar material...</option>
-                                <option value="acero1018">Acero 1018</option>
-                                <option value="acero4140">Acero 4140</option>
-                                <option value="inox304">Acero Inox 304</option>
-                                <option value="alum6061">Aluminio 6061</option>
+                                <option value="Acero 1018">Acero 1018</option>
+                                <option value="Acero 4140">Acero 4140</option>
+                                <option value="Acero Inox 304">Acero Inox 304</option>
+                                <option value="Aluminio 6061">Aluminio 6061</option>
+                                <option value="Bronce">Bronce</option>
+                                <option value="Nylon">Nylon (Grilon)</option>
                             </select>
                         </div>
                         <div style="flex: 1;">
                             <label for="tiempo-estimado" style="display: block; margin-bottom: 8px; font-weight: 600;">Tiempo Estimado (horas) *</label>
                             <input type="number" id="tiempo-estimado" step="0.1" min="0" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+                        <div style="flex: 2;">
+                            <label for="maquina-vinculo" style="display: block; margin-bottom: 8px; font-weight: 600;">Vincular a Máquina (CMMS) *</label>
+                            <select id="maquina-vinculo" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                                <option value="">Cargando máquinas...</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="stock-minimo" style="display: block; margin-bottom: 8px; font-weight: 600;">Stock Mínimo</label>
+                            <input type="number" id="stock-minimo" value="1" min="0" style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="stock-maximo" style="display: block; margin-bottom: 8px; font-weight: 600;">Stock Máximo</label>
+                            <input type="number" id="stock-maximo" value="5" min="0" style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
                         </div>
                     </div>
 
@@ -1915,13 +1934,15 @@ const PATHS = {
     workOrders: 'workOrders',
     parts: 'parts',
     workshopPieces: 'piezasTaller',
-    users: 'users'
+    users: 'users',
+    machines: 'machines'
 };
 
 // ========== VARIABLES DE ESTADO ==========
 let usuarioLogueado = null;
 let piezasKanban = {};
 let tallerInventory = {};
+let maquinas = {};
 
 // ========== SISTEMA DE AUTENTICACIÓN ==========
 function login() {
@@ -2064,6 +2085,15 @@ function initSystem() {
             updateInventoryUI();
         }, error => console.error("Error en parts:", error));
 
+    firestore.collection(PATHS.machines)
+        .onSnapshot(snapshot => {
+            maquinas = {};
+            snapshot.forEach(doc => {
+                maquinas[doc.id] = doc.data();
+            });
+            renderMachinesList();
+        }, error => console.error("Error en machines:", error));
+
     setupNavigation();
     initKanbanDragAndDrop();
 }
@@ -2094,6 +2124,29 @@ function renderSolicitudes(workOrders) {
     // Update Dashboard "Pedidos Pendientes"
     const stats = document.querySelectorAll('.stat-info h3');
     if (stats[3]) stats[3].textContent = pendingCount;
+}
+
+function renderMachinesList() {
+    const select = document.getElementById('maquina-vinculo');
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">Seleccionar máquina...</option>';
+
+    const sortedMachines = Object.keys(maquinas)
+        .map(id => ({id, ...maquinas[id]}))
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    sortedMachines.forEach(m => {
+        const option = document.createElement('option');
+        option.value = m.id;
+        option.textContent = m.name || m.id;
+        select.appendChild(option);
+    });
+
+    if (currentValue && maquinas[currentValue]) {
+        select.value = currentValue;
+    }
 }
 
 function renderWorkshopPieces(pieces) {
@@ -2319,7 +2372,10 @@ function syncWithCMMSInventory(pieceId) {
         status: 'Available',
         origin: 'Workshop',
         addedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        workshopPieceId: pieceId
+        workshopPieceId: pieceId,
+        machineId: piece.maquinaId || null,
+        stockMinimo: piece.stockMinimo || 0,
+        stockMaximo: piece.stockMaximo || 0
     };
 
     firestore.collection(PATHS.parts).add(cmmsPart).then(() => {
@@ -2441,6 +2497,64 @@ function viewWorkOrder(id) { alert('Detalle de orden: ' + id); }
 function viewPiezaKanban(id) { alert('Detalle de pieza: ' + id); }
 function editPiezaKanban(id) { alert('Editar pieza: ' + id); }
 
+function saveNewPiece() {
+    const codigo = document.getElementById('codigo').value;
+    const nombre = document.getElementById('nombre').value;
+    const descripcion = document.getElementById('descripcion').value;
+    const material = document.getElementById('material').value;
+    const tiempoEstimado = document.getElementById('tiempo-estimado').value;
+    const maquinaId = document.getElementById('maquina-vinculo').value;
+    const stockMin = parseInt(document.getElementById('stock-minimo').value) || 0;
+    const stockMax = parseInt(document.getElementById('stock-maximo').value) || 0;
+
+    if (!codigo || !nombre || !material || !tiempoEstimado || !maquinaId) {
+        showNotification('Por favor complete los campos obligatorios', 'error');
+        return;
+    }
+
+    const newPiece = {
+        codigo,
+        nombre,
+        descripcion,
+        material,
+        tiempoEstimado: tiempoEstimado + 'h',
+        maquinaId,
+        stockMinimo: stockMin,
+        stockMaximo: stockMax,
+        estado: 'design',
+        progreso: 0,
+        fechaInicio: new Date().toLocaleDateString(),
+        operario: 'Sin asignar',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    const saveBtn = document.querySelector('#form-nueva-pieza button[type="submit"]');
+    const originalBtnText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    saveBtn.disabled = true;
+
+    firestore.collection(PATHS.workshopPieces).add(newPiece).then(docRef => {
+        // Vincular en el documento de la máquina como repuesto
+        return firestore.collection(PATHS.machines).doc(maquinaId).set({
+            spareParts: firebase.firestore.FieldValue.arrayUnion({
+                workshopPieceId: docRef.id,
+                name: nombre,
+                code: codigo
+            })
+        }, { merge: true });
+    }).then(() => {
+        showNotification('Pieza registrada y vinculada exitosamente', 'success');
+        closeModal('modal-nueva-pieza');
+        document.getElementById('form-nueva-pieza').reset();
+    }).catch(error => {
+        console.error("Error al guardar pieza:", error);
+        showNotification('Error al guardar la pieza: ' + error.message, 'error');
+    }).finally(() => {
+        saveBtn.innerHTML = originalBtnText;
+        saveBtn.disabled = false;
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Limpiar tarjetas estáticas
     const columns = ['design', 'fabricacion', 'control', 'terminado', 'entregado'];
@@ -2456,6 +2570,14 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.onsubmit = (e) => {
             e.preventDefault();
             login();
+        };
+    }
+
+    const nuevaPiezaForm = document.getElementById('form-nueva-pieza');
+    if (nuevaPiezaForm) {
+        nuevaPiezaForm.onsubmit = (e) => {
+            e.preventDefault();
+            saveNewPiece();
         };
     }
 });
