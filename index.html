@@ -1931,11 +1931,11 @@ const auth = firebase.auth();
 const firestore = firebase.firestore();
 
 const PATHS = {
-    workOrders: 'public/data/workOrders',
-    parts: 'public/data/parts',
+    workOrders: 'workOrders',
+    parts: 'parts',
     workshopPieces: 'piezasTaller',
     users: 'users',
-    machines: 'public/data/machines'
+    machines: 'machines'
 };
 
 // ========== VARIABLES DE ESTADO ==========
@@ -2117,14 +2117,20 @@ function initSystem() {
 
     firestore.collection(PATHS.machines)
         .onSnapshot(snapshot => {
-            console.log("Máquinas recibidas de Firestore:", snapshot.size);
+            console.log("Intentando cargar máquinas de la colección:", PATHS.machines);
+            console.log("Snapshot size:", snapshot.size);
+            if (snapshot.empty) {
+                console.warn("La colección de máquinas está vacía en la ruta:", PATHS.machines);
+            }
             maquinas = {};
             snapshot.forEach(doc => {
-                maquinas[doc.id] = doc.data();
+                const data = doc.data();
+                console.log("Máquina encontrada:", doc.id, data.name || data.nombre);
+                maquinas[doc.id] = data;
             });
             renderMachinesList();
         }, error => {
-            console.error("Error en machines:", error);
+            console.error("Error en machines (" + PATHS.machines + "):", error);
             showNotification("Error cargando máquinas: " + error.message, "error");
         });
 
@@ -2186,7 +2192,7 @@ function renderMachinesList() {
     sortedMachines.forEach(m => {
         const option = document.createElement('option');
         option.value = m.id;
-        option.textContent = m.name || m.id;
+        option.textContent = m.name || m.nombre || m.id;
         select.appendChild(option);
     });
 
