@@ -1083,6 +1083,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     </head>
 <body>
     <!-- ========== PANTALLA DE LOGIN ========== -->
@@ -1814,7 +1815,6 @@
 const firebaseConfig = {
     apiKey: "AIzaSyCnAxQqlkVzEPpcwXLO-MhIfK0517lSvT4",
     authDomain: "gestion-de-mantenimeinto.firebaseapp.com",
-    databaseURL: "https://gestion-de-mantenimeinto-default-rtdb.firebaseio.com",
     projectId: "gestion-de-mantenimeinto",
     storageBucket: "gestion-de-mantenimeinto.firebasestorage.app",
     messagingSenderId: "1098054951785",
@@ -1824,13 +1824,12 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
-const db = firebase.database();
+const firestore = firebase.firestore();
 
 const PATHS = {
-    workOrders: 'artifacts/default-cmms-app/public/data/workOrders',
-    cmmsInventory: 'artifacts/default-cmms-app/public/data/parts',
-    workshopPieces: 'piezasKanban',
-    workshopInventory: 'taller/inventario',
+    workOrders: 'workOrders',
+    parts: 'parts',
+    workshopPieces: 'piezasTaller',
     users: 'users'
 };
 
@@ -1865,17 +1864,24 @@ function login() {
         return auth.signInWithEmailAndPassword(user, pass);
     }).then((userCredential) => {
         const uid = userCredential.user.uid;
-        return db.ref(`${PATHS.users}/${uid}`).once('value');
-    }).then(snapshot => {
-        const userData = snapshot.val();
-        if (userData) {
-            usuarioLogueado = userData;
-            showNotification('Bienvenido al Sistema Corinfar', 'success');
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainSystem').style.display = 'flex';
-            initSystem();
+        return firestore.collection(PATHS.users).doc(uid).get();
+    }).then(doc => {
+        if (doc.exists) {
+            usuarioLogueado = doc.data();
+            finishLogin();
         } else {
-            throw new Error('Perfil de usuario no encontrado');
+            // Crear perfil automático si no existe en Firestore
+            const newUser = {
+                uid: auth.currentUser.uid,
+                email: auth.currentUser.email,
+                name: auth.currentUser.email.split('@')[0],
+                roleName: 'Operario Taller',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            return firestore.collection(PATHS.users).doc(newUser.uid).set(newUser).then(() => {
+                usuarioLogueado = newUser;
+                finishLogin();
+            });
         }
     }).catch(error => {
         console.error(error);
@@ -1883,6 +1889,13 @@ function login() {
         loginBtn.innerHTML = 'Iniciar Sesión';
         loginBtn.disabled = false;
     });
+}
+
+function finishLogin() {
+    showNotification('Bienvenido al Sistema Corinfar', 'success');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainSystem').style.display = 'flex';
+    initSystem();
 }
 
 function logout() {
@@ -1894,10 +1907,9 @@ function logout() {
 function checkExistingSession() {
     auth.onAuthStateChanged(user => {
         if (user) {
-            db.ref(`${PATHS.users}/${user.uid}`).once('value').then(snapshot => {
-                const userData = snapshot.val();
-                if (userData) {
-                    usuarioLogueado = userData;
+            firestore.collection(PATHS.users).doc(user.uid).get().then(doc => {
+                if (doc.exists) {
+                    usuarioLogueado = doc.data();
                     document.getElementById('loginScreen').style.display = 'none';
                     document.getElementById('mainSystem').style.display = 'flex';
                     initSystem();
@@ -1913,28 +1925,37 @@ function initSystem() {
     const userNameEl = document.getElementById('sidebarUserName');
     const userRoleEl = document.getElementById('sidebarUserRole');
     if (userNameEl) userNameEl.textContent = usuarioLogueado.name;
-    if (userRoleEl) userRoleEl.textContent = usuarioLogueado.roleName || 'Administrador';
+    if (userRoleEl) userRoleEl.textContent = usuarioLogueado.roleName || 'Operario Taller';
 
-    // Clear recent pieces table
-    const recentTableBody = document.querySelector('#dashboard tbody');
-    if (recentTableBody) recentTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center">Cargando datos...</td></tr>';
+    // Listeners de Firestore
+    firestore.collection(PATHS.workOrders)
+        .onSnapshot(snapshot => {
+            const workOrders = {};
+            snapshot.forEach(doc => {
+                workOrders[doc.id] = doc.data();
+            });
+            renderSolicitudes(workOrders);
+        }, error => console.error("Error en workOrders:", error));
 
-    // Listeners de Firebase
-    db.ref(PATHS.workOrders).on('value', snapshot => {
-        renderSolicitudes(snapshot.val() || {});
-    });
+    firestore.collection(PATHS.workshopPieces)
+        .onSnapshot(snapshot => {
+            piezasKanban = {};
+            snapshot.forEach(doc => {
+                piezasKanban[doc.id] = doc.data();
+            });
+            renderWorkshopPieces(piezasKanban);
+            renderRecentPieces(piezasKanban);
+            updateDashboardStats();
+        }, error => console.error("Error en piezasTaller:", error));
 
-    db.ref(PATHS.workshopPieces).on('value', snapshot => {
-        piezasKanban = snapshot.val() || {};
-        renderWorkshopPieces(piezasKanban);
-        renderRecentPieces(piezasKanban);
-        updateDashboardStats();
-    });
-
-    db.ref(PATHS.workshopInventory).on('value', snapshot => {
-        tallerInventory = snapshot.val() || {};
-        updateInventoryUI();
-    });
+    firestore.collection(PATHS.parts)
+        .onSnapshot(snapshot => {
+            tallerInventory = {};
+            snapshot.forEach(doc => {
+                tallerInventory[doc.id] = doc.data();
+            });
+            updateInventoryUI();
+        }, error => console.error("Error en parts:", error));
 
     setupNavigation();
     initKanbanDragAndDrop();
@@ -1948,7 +1969,14 @@ function renderSolicitudes(workOrders) {
     let pendingCount = 0;
     Object.keys(workOrders).forEach(id => {
         const order = workOrders[id];
-        if (order.tallerStatus !== 'accepted') {
+
+        // Filtro solicitado: Mostrar solo OTs de "mecanizado" que no hayan sido aceptadas
+        const isMecanizado = (order.label === 'mecanizado' ||
+                             order.type === 'mecanizado' ||
+                             (order.tags && order.tags.includes('mecanizado')) ||
+                             order.category === 'mecanizado');
+
+        if (order.tallerStatus !== 'accepted' && isMecanizado) {
             const card = createCardHTML(id, order, 'solicitudes');
             container.appendChild(card);
             pendingCount++;
@@ -2089,12 +2117,13 @@ function createCardHTML(id, data, type) {
 
 // ========== ACCIONES KANBAN ==========
 function acceptWorkOrder(id) {
-    db.ref(`${PATHS.workOrders}/${id}`).once('value').then(snapshot => {
-        const order = snapshot.val();
-        if (!order) return;
+    const docRef = firestore.collection(PATHS.workOrders).doc(id);
+    docRef.get().then(doc => {
+        if (!doc.exists) return;
+        const order = doc.data();
 
         const newPiece = {
-            nombre: order.nombre || order.description,
+            nombre: order.nombre || order.description || 'Sin Nombre',
             codigo: order.codigo || 'PZ-CMMS',
             material: order.material || 'Por definir',
             prioridad: order.prioridad || 'media',
@@ -2102,20 +2131,22 @@ function acceptWorkOrder(id) {
             progreso: 0,
             imageUrl: order.imageUrl || null,
             cmmsId: id,
-            fechaInicio: new Date().toLocaleDateString()
+            fechaInicio: new Date().toLocaleDateString(),
+            operario: 'Sin asignar'
         };
 
-        const newRef = db.ref(PATHS.workshopPieces).push();
-        return Promise.all([
-            newRef.set(newPiece),
-            db.ref(`${PATHS.workOrders}/${id}`).update({
+        return firestore.collection(PATHS.workshopPieces).add(newPiece).then(pieceRef => {
+            return docRef.update({
                 tallerStatus: 'accepted',
-                tallerPieceId: newRef.key,
+                tallerPieceId: pieceRef.id,
                 status: 'En Proceso (Taller)'
-            })
-        ]);
+            });
+        });
     }).then(() => {
         showNotification('Trabajo aceptado y movido a Diseño', 'success');
+    }).catch(error => {
+        console.error("Error al aceptar OT:", error);
+        showNotification('Error al aceptar el trabajo', 'error');
     });
 }
 
@@ -2156,14 +2187,18 @@ function initKanbanDragAndDrop() {
 }
 
 function updatePieceStatus(id, newStatus) {
+    const docRef = firestore.collection(PATHS.workshopPieces).doc(id);
     const updates = { estado: newStatus };
 
     if (newStatus === 'terminado') {
         updates.progreso = 100;
+        updates.fechaFin = new Date().toLocaleDateString();
         syncWithCMMSInventory(id);
     }
 
-    db.ref(`${PATHS.workshopPieces}/${id}`).update(updates);
+    docRef.update(updates).catch(error => {
+        console.error("Error al actualizar estado:", error);
+    });
 }
 
 function syncWithCMMSInventory(pieceId) {
@@ -2176,10 +2211,15 @@ function syncWithCMMSInventory(pieceId) {
         material: piece.material,
         status: 'Available',
         origin: 'Workshop',
-        addedAt: firebase.database.ServerValue.TIMESTAMP
+        addedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        workshopPieceId: pieceId
     };
 
-    db.ref(PATHS.cmmsInventory).push(cmmsPart);
+    firestore.collection(PATHS.parts).add(cmmsPart).then(() => {
+        showNotification('Pieza sincronizada con inventario CMMS', 'success');
+    }).catch(error => {
+        console.error("Error al sincronizar con CMMS:", error);
+    });
 }
 
 // ========== OTROS COMPONENTES UI ==========
@@ -2244,7 +2284,33 @@ function updateInventoryUI() {
     const alertContainer = document.querySelector('.alertas');
     const stats = document.querySelectorAll('.stat-info h3');
 
-    let html = '<div class="table-responsive"><table><thead><tr><th>Nombre</th><th>Categoría</th><th>Stock</th></tr></thead><tbody><tr><td colspan="6" style="text-align:center">Cargando datos...</td></tr></tbody></table></div>';
+    let html = '<div class="table-responsive"><table><thead><tr><th>Nombre</th><th>Origen</th><th>Estado</th></tr></thead><tbody>';
+
+    let lowStockCount = 0;
+    let alertsHtml = '';
+
+    const items = Object.values(tallerInventory);
+    if (items.length === 0) {
+        html += '<tr><td colspan="3" style="text-align:center">No hay piezas en el inventario CMMS</td></tr>';
+    } else {
+        items.forEach(item => {
+            html += `
+                <tr>
+                    <td>${item.name || '---'}</td>
+                    <td>${item.origin || '---'}</td>
+                    <td>${item.status || '---'}</td>
+                </tr>
+            `;
+            if (item.status === 'Low' || (item.stock !== undefined && item.stock < 5)) {
+                lowStockCount++;
+                alertsHtml += `<div class="alerta-item" style="padding: 15px; border-left: 4px solid #f39c12; background: #fff3cd; margin-bottom: 10px; border-radius: 0 5px 5px 0;">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>${item.name}:</strong> Stock Bajo
+                </div>`;
+            }
+        });
+    }
+
+    html += '</tbody></table></div>';
 
     if (container) container.innerHTML = html;
     if (alertContainer) alertContainer.innerHTML = alertsHtml || '<p>No hay alertas de inventario</p>';
