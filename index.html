@@ -1757,6 +1757,7 @@
                                 <option value="Herramienta">Herramienta</option>
                                 <option value="Insumo">Insumo</option>
                                 <option value="Repuesto">Repuesto</option>
+                                <option value="Pieza Taller">Pieza Taller</option>
                             </select>
                             <select id="filter-estado" class="btn btn-filter" style="padding: 10px;">
                                 <option value="">Todos los estados</option>
@@ -1789,11 +1790,12 @@
                                             <th>Valor Total</th>
                                             <th>Estado</th>
                                             <th>Ubicación</th>
+                                            <th>Máquina</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td colspan="11" style="text-align:center">Cargando inventario...</td></tr>
+                                        <tr><td colspan="12" style="text-align:center">Cargando inventario...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -2003,6 +2005,7 @@
                                 <option value="Herramienta">Herramienta</option>
                                 <option value="Insumo">Insumo</option>
                                 <option value="Repuesto">Repuesto</option>
+                                <option value="Pieza Taller">Pieza Taller</option>
                             </select>
                         </div>
                         <div style="flex: 1;">
@@ -2612,6 +2615,7 @@ async function syncWithCMMSInventory(pieceId, increment = 0) {
             code: piece.codigo,
             description: piece.descripcion || '',
             material: piece.material,
+            category: 'Pieza Taller',
             status: 'Available',
             origin: 'Workshop',
             lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
@@ -2762,7 +2766,13 @@ function updateInventoryUI() {
     const items = Object.values(tallerInventory);
 
     const filteredItems = items.filter(item => {
-        if (item.origin === 'Workshop') return false;
+        // Filtrar piezas de taller: solo mostrar si ya fueron fabricadas (stock > 0)
+        if (item.origin === 'Workshop') {
+            if (!(item.stock > 0)) return false;
+        } else {
+            // Para materiales/insumos, filtrar registros incompletos (sin nombre o categoría)
+            if (!(item.name || item.nombre) || !(item.category || item.categoria)) return false;
+        }
 
         const matchesCategory = !categoryFilter || item.category === categoryFilter || item.categoria === categoryFilter;
 
@@ -2777,7 +2787,7 @@ function updateInventoryUI() {
     });
 
     if (filteredItems.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center">No se encontraron artículos en el inventario</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center">No se encontraron artículos en el inventario</td></tr>';
     } else {
         filteredItems.forEach(item => {
             const itemName = item.name || item.nombre || 'Sin nombre';
@@ -2790,6 +2800,7 @@ function updateInventoryUI() {
             const itemTotal = (itemCant * itemCosto).toFixed(2);
             const itemStatus = item.status || item.estado || 'Disponible';
             const itemLoc = item.location || item.ubicacion || '---';
+            const itemMachine = maquinas[item.machineId] ? (maquinas[item.machineId].name || maquinas[item.machineId].nombre) : '---';
 
             const statusBadgeClass = itemStatus === 'Stock Bajo' || itemStatus === 'Low' ? 'badge-warning' :
                                     itemStatus === 'Agotado' || itemStatus === 'Out of stock' ? 'badge-danger' : 'badge-success';
@@ -2806,6 +2817,7 @@ function updateInventoryUI() {
                 <td><strong>$${itemTotal}</strong></td>
                 <td><span class="badge ${statusBadgeClass}">${itemStatus}</span></td>
                 <td>${itemLoc}</td>
+                <td>${itemMachine}</td>
                 <td>
                     <div class="action-buttons">
                         <button class="action-btn btn-view" title="Ver"><i class="fas fa-eye"></i></button>
