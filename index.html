@@ -2471,38 +2471,39 @@ function renderSolicitudes(workOrders) {
 }
 
 function renderMachinesList() {
-    console.log("Actualizando lista de máquinas...", maquinas);
-    const select = document.getElementById('maquina-vinculo');
-    if (!select) {
-        console.error("No se encontró el select 'maquina-vinculo'");
-        return;
-    }
+    console.log("Actualizando listas de máquinas...", maquinas);
 
-    const currentValue = select.value;
-    select.innerHTML = '<option value="">Seleccionar máquina...</option>';
+    // Lista de selectores que necesitan ser poblados con máquinas
+    const machineSelectors = ['maquina-vinculo', 'plano-maquina'];
 
     const machineEntries = Object.keys(maquinas);
-    console.log(`Encontradas ${machineEntries.length} máquinas`);
-
-    if (machineEntries.length === 0) {
-        select.innerHTML = '<option value="">No hay máquinas disponibles</option>';
-        return;
-    }
-
     const sortedMachines = machineEntries
         .map(id => ({id, ...maquinas[id]}))
         .sort((a, b) => (a.name || a.nombre || '').localeCompare(b.name || b.nombre || ''));
 
-    sortedMachines.forEach(m => {
-        const option = document.createElement('option');
-        option.value = m.id;
-        option.textContent = m.name || m.nombre || m.id;
-        select.appendChild(option);
-    });
+    machineSelectors.forEach(selectorId => {
+        const select = document.getElementById(selectorId);
+        if (!select) return;
 
-    if (currentValue && maquinas[currentValue]) {
-        select.value = currentValue;
-    }
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Seleccionar máquina...</option>';
+
+        if (machineEntries.length === 0) {
+            select.innerHTML = '<option value="">No hay máquinas disponibles</option>';
+            return;
+        }
+
+        sortedMachines.forEach(m => {
+            const option = document.createElement('option');
+            option.value = m.id;
+            option.textContent = m.name || m.nombre || m.id;
+            select.appendChild(option);
+        });
+
+        if (currentValue && maquinas[currentValue]) {
+            select.value = currentValue;
+        }
+    });
 }
 
 function renderWorkshopPieces(pieces) {
@@ -3190,8 +3191,8 @@ function showModal(id) {
     const modal = document.getElementById(id);
     if (modal) {
         modal.style.display = 'flex';
-        // Si el modal es el de nueva pieza, asegurar que las máquinas estén cargadas
-        if (id === 'modal-nueva-pieza') {
+        // Si el modal es el de nueva pieza o subir plano, asegurar que las máquinas estén cargadas
+        if (id === 'modal-nueva-pieza' || id === 'modal-subir-plano') {
             renderMachinesList();
         }
         if (id === 'modal-gestion-trabajo' && currentViewingPieceId) {
