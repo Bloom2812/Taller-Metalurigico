@@ -1830,13 +1830,24 @@
                             </button>
                             <h1 class="page-title"><i class="fas fa-file-pdf"></i> Gestión de Planos - <span class="corinfar-logo">CORINFAR</span> <span class="corinfar-title">Taller</span></h1>
                         </div>
-                        <button class="btn btn-success">
-                            <i class="fas fa-plus"></i> Subir Plano
-                        </button>
+                        <div class="header-controls">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="Buscar por código o máquina..." id="searchPlanosInput">
+                            </div>
+                            <button class="btn btn-success" onclick="showModal('modal-subir-plano')">
+                                <i class="fas fa-plus"></i> Subir Nuevo Plano
+                            </button>
+                        </div>
                     </div>
                     <div class="management-container">
-                        <div class="section">
-                            <p>Módulo de planos - Gestión de archivos CAD/DWG/PDF</p>
+                        <!-- GRID DE PLANOS -->
+                        <div id="blueprints-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                            <!-- Se llena dinámicamente -->
+                            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--gray);">
+                                <i class="fas fa-spinner fa-spin fa-3x"></i>
+                                <p style="margin-top: 15px;">Cargando biblioteca de planos...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2018,6 +2029,81 @@
     </div>
 
     <!-- MODAL NUEVO ITEM INVENTARIO -->
+    <!-- MODAL SUBIR PLANO -->
+    <div id="modal-subir-plano" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-upload"></i> Subir Nuevo Plano - <span class="corinfar-logo">CORINFAR</span></h2>
+                <button class="close-modal" onclick="closeModal('modal-subir-plano')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-subir-plano" style="padding: 20px;">
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div style="flex: 2;">
+                            <label for="plano-nombre" style="display: block; margin-bottom: 8px; font-weight: 600;">Nombre del Plano *</label>
+                            <input type="text" id="plano-nombre" placeholder="Ej: Plano Base Eje Principal" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="plano-codigo" style="display: block; margin-bottom: 8px; font-weight: 600;">Código de Pieza</label>
+                            <input type="text" id="plano-codigo" placeholder="Ej: PZ-025" style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <label for="plano-version" style="display: block; margin-bottom: 8px; font-weight: 600;">Versión *</label>
+                            <input type="text" id="plano-version" placeholder="Ej: v1.0" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="plano-fecha" style="display: block; margin-bottom: 8px; font-weight: 600;">Fecha de Revisión *</label>
+                            <input type="date" id="plano-fecha" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <label for="plano-maquina" style="display: block; margin-bottom: 8px; font-weight: 600;">Máquina Asociada</label>
+                            <select id="plano-maquina" style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                                <option value="">Seleccionar máquina...</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="plano-disenador" style="display: block; margin-bottom: 8px; font-weight: 600;">Diseñado por *</label>
+                            <input type="text" id="plano-disenador" placeholder="Nombre del diseñador" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <label for="plano-archivo" style="display: block; margin-bottom: 8px; font-weight: 600;">Seleccionar Archivo (PDF) *</label>
+                        <div style="border: 2px dashed #3498db; padding: 30px; text-align: center; border-radius: 10px; background: #f0f7ff;">
+                            <input type="file" id="plano-archivo" accept=".pdf" required style="display: none;">
+                            <label for="plano-archivo" style="cursor: pointer; color: #3498db;">
+                                <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                                <p style="margin-top: 10px; font-weight: 600;" id="file-name-display">Haz clic para seleccionar un archivo PDF</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right;">
+                        <button type="button" class="btn btn-filter" onclick="closeModal('modal-subir-plano')" style="margin-right: 10px;">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-success" id="btn-save-plano">
+                            <i class="fas fa-save"></i> Subir y Guardar
+                        </button>
+                    </div>
+
+                    <div id="upload-progress-container" style="display: none; margin-top: 20px;">
+                        <div class="progress-bar" style="height: 10px; background: #eee; border-radius: 5px; overflow: hidden;">
+                            <div id="upload-progress-fill" style="width: 0%; height: 100%; background: var(--secondary); transition: width 0.3s;"></div>
+                        </div>
+                        <p id="upload-status-text" style="font-size: 0.8rem; text-align: center; margin-top: 5px; color: var(--gray);">Subiendo: 0%</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-nuevo-item-inventario" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -2137,14 +2223,17 @@ const PATHS = {
     parts: 'artifacts/default-cmms-app/public/data/parts',
     workshopPieces: 'piezasTaller',
     users: 'users',
-    machines: 'artifacts/default-cmms-app/public/data/machines'
+    machines: 'artifacts/default-cmms-app/public/data/machines',
+    blueprints: 'planos'
 };
 
 // ========== VARIABLES DE ESTADO ==========
-let usuarioLogueado = null;
-let piezasKanban = {};
-let tallerInventory = {};
-let maquinas = {};
+var usuarioLogueado = null;
+var piezasKanban = {};
+var tallerInventory = {};
+var maquinas = {};
+var planosBiblioteca = {};
+var storage = firebase.storage();
 
 // ========== SISTEMA DE AUTENTICACIÓN ==========
 function login() {
@@ -2269,6 +2358,7 @@ function navigateTo(pageId) {
 
     if (pageId === 'inventario') updateInventoryUI();
     if (pageId === 'piezas') updatePiecesUI();
+    if (pageId === 'planos') updateBlueprintsUI();
 }
 
 function initSystem() {
@@ -2337,6 +2427,15 @@ function initSystem() {
             console.error("Error en machines (" + PATHS.machines + "):", error);
             showNotification("Error cargando máquinas: " + error.message, "error");
         });
+
+    firestore.collection(PATHS.blueprints)
+        .onSnapshot(snapshot => {
+            planosBiblioteca = {};
+            snapshot.forEach(doc => {
+                planosBiblioteca[doc.id] = doc.data();
+            });
+            updateBlueprintsUI();
+        }, error => console.error("Error en planos:", error));
 
     setupNavigation();
     initKanbanDragAndDrop();
@@ -2769,6 +2868,166 @@ function updateDashboardStats() {
     // Stock Bajo is updated in updateInventoryUI
 }
 
+function updateBlueprintsUI() {
+    const grid = document.getElementById('blueprints-grid');
+    if (!grid) return;
+
+    const searchTerm = document.getElementById('searchPlanosInput')?.value.toLowerCase() || '';
+    const planos = Object.keys(planosBiblioteca).map(id => ({ id, ...planosBiblioteca[id] }));
+
+    const filtered = planos.filter(p =>
+        (p.nombre || '').toLowerCase().includes(searchTerm) ||
+        (p.codigoPieza || '').toLowerCase().includes(searchTerm) ||
+        (p.maquinaNombre || '').toLowerCase().includes(searchTerm)
+    );
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--gray);">
+                <i class="fas fa-file-pdf fa-3x" style="opacity: 0.3;"></i>
+                <p style="margin-top: 15px;">No se encontraron planos en la biblioteca.</p>
+            </div>
+        `;
+        return;
+    }
+
+    grid.innerHTML = '';
+    filtered.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'blueprint-card';
+        card.style = 'background: white; border-radius: 15px; overflow: hidden; box-shadow: var(--shadow); transition: transform 0.3s;';
+
+        card.innerHTML = `
+            <div class="blueprint-preview" style="height: 160px; background: #f0f7ff; display: flex; align-items: center; justify-content: center; position: relative;">
+                <i class="fas fa-file-pdf fa-4x" style="color: #e74c3c;"></i>
+                <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem;">
+                    ${p.version || 'v1.0'}
+                </div>
+            </div>
+            <div style="padding: 15px;">
+                <h3 style="font-size: 1rem; margin-bottom: 5px; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.nombre}">${p.nombre}</h3>
+                <div style="font-size: 0.8rem; color: var(--gray); margin-bottom: 10px;">
+                    <div><i class="fas fa-tag"></i> ${p.codigoPieza || 'Independiente'}</div>
+                    <div><i class="fas fa-industry"></i> ${p.maquinaNombre || 'N/A'}</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 10px;">
+                    <span style="font-size: 0.75rem; color: var(--gray);"><i class="far fa-calendar"></i> ${p.fechaRevision || '---'}</span>
+                    <div style="display: flex; gap: 5px;">
+                        <a href="${p.fileUrl}" target="_blank" class="action-btn-small" style="background: var(--secondary); color: white;" title="Ver PDF">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        ${usuarioLogueado && usuarioLogueado.roleName === 'Administrador' ? `
+                            <button class="action-btn-small" style="background: var(--accent); color: white;" onclick="deleteBlueprint('${p.id}', '${p.storagePath}')" title="Eliminar">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        card.onmouseover = () => card.style.transform = 'translateY(-5px)';
+        card.onmouseout = () => card.style.transform = 'translateY(0)';
+
+        grid.appendChild(card);
+    });
+}
+
+async function saveNewBlueprint(e) {
+    e.preventDefault();
+
+    const file = document.getElementById('plano-archivo').files[0];
+    if (!file) {
+        showNotification('Debe seleccionar un archivo PDF', 'error');
+        return;
+    }
+
+    const nombre = document.getElementById('plano-nombre').value;
+    const codigo = document.getElementById('plano-codigo').value;
+    const version = document.getElementById('plano-version').value;
+    const fecha = document.getElementById('plano-fecha').value;
+    const maquinaId = document.getElementById('plano-maquina').value;
+    const disenador = document.getElementById('plano-disenador').value;
+
+    const maquinaNombre = maquinaId ? (maquinas[maquinaId]?.name || maquinas[maquinaId]?.nombre) : '';
+
+    const btn = document.getElementById('btn-save-plano');
+    const progressContainer = document.getElementById('upload-progress-container');
+    const progressFill = document.getElementById('upload-progress-fill');
+    const progressText = document.getElementById('upload-status-text');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo...';
+    progressContainer.style.display = 'block';
+
+    try {
+        const storagePath = `planos/${Date.now()}_${file.name}`;
+        const storageRef = storage.ref().child(storagePath);
+        const uploadTask = storageRef.put(file);
+
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                progressFill.style.width = progress + '%';
+                progressText.textContent = `Subiendo: ${Math.round(progress)}%`;
+            },
+            (error) => { throw error; },
+            async () => {
+                const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+
+                const blueprintData = {
+                    nombre,
+                    codigoPieza: codigo,
+                    version,
+                    fechaRevision: fecha,
+                    maquinaId,
+                    maquinaNombre,
+                    disenador,
+                    fileUrl: downloadURL,
+                    storagePath,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdBy: usuarioLogueado.uid
+                };
+
+                await firestore.collection(PATHS.blueprints).add(blueprintData);
+
+                showNotification('Plano subido y guardado exitosamente', 'success');
+                closeModal('modal-subir-plano');
+                document.getElementById('form-subir-plano').reset();
+                document.getElementById('file-name-display').textContent = 'Haz clic para seleccionar un archivo PDF';
+
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Subir y Guardar';
+                progressContainer.style.display = 'none';
+            }
+        );
+
+    } catch (error) {
+        console.error("Error al subir plano:", error);
+        showNotification('Error al subir el archivo: ' + error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Subir y Guardar';
+    }
+}
+
+function deleteBlueprint(id, storagePath) {
+    if (!confirm('¿Está seguro de eliminar este plano? Esta acción no se puede deshacer.')) return;
+
+    firestore.collection(PATHS.blueprints).doc(id).delete()
+        .then(() => {
+            if (storagePath) {
+                return storage.ref().child(storagePath).delete();
+            }
+        })
+        .then(() => {
+            showNotification('Plano eliminado correctamente', 'success');
+        })
+        .catch(error => {
+            console.error("Error al eliminar plano:", error);
+            showNotification('Error al eliminar: ' + error.message, 'error');
+        });
+}
+
 function updatePiecesUI() {
     const tbody = document.querySelector('#table-piezas tbody');
     if (!tbody) return;
@@ -2914,9 +3173,15 @@ function closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.style.display = 'none';
 
-    if (id === 'modal-pieza-detalle') {
-        if (activeTimerInterval) clearInterval(activeTimerInterval);
-        currentViewingPieceId = null;
+    if (id === 'modal-pieza-detalle' || id === 'modal-gestion-trabajo') {
+        // Solo limpiar si AMBOS están cerrados
+        const m1 = document.getElementById('modal-pieza-detalle');
+        const m2 = document.getElementById('modal-gestion-trabajo');
+        if ((!m1 || m1.style.display === 'none' || m1.style.display === '') &&
+            (!m2 || m2.style.display === 'none' || m2.style.display === '')) {
+            if (activeTimerInterval) clearInterval(activeTimerInterval);
+            currentViewingPieceId = null;
+        }
     }
 }
 
@@ -2944,6 +3209,7 @@ function initGestionTrabajo(id) {
     document.getElementById('gestion-observaciones').value = piece.observacionesTecnicas || '';
 
     updateGestionTimerUI(piece);
+    startLiveTimerUpdate(piece);
 }
 
 function updateGestionTimerUI(piece) {
@@ -3160,20 +3426,26 @@ function viewPiezaKanban(id) {
     modal.querySelector('.modal-body').innerHTML = content;
     showModal('modal-pieza-detalle');
 
-    // Iniciar intervalo de actualización si el timer está corriendo
+    startLiveTimerUpdate(piece);
+}
+
+function startLiveTimerUpdate(piece) {
     if (activeTimerInterval) clearInterval(activeTimerInterval);
-    if (piece.timerRunning) {
-        activeTimerInterval = setInterval(() => {
-            const currentSecs = calculateCurrentSeconds(piece);
-            const formatted = formatTime(currentSecs);
+    if (!piece.timerRunning) return;
 
-            const el = document.getElementById('live-timer');
-            if (el) el.textContent = `${formatted} / ${timeEst}`;
+    activeTimerInterval = setInterval(() => {
+        const currentSecs = calculateCurrentSeconds(piece);
+        const formatted = formatTime(currentSecs);
 
-            const elGestion = document.getElementById('gestion-live-timer');
-            if (elGestion) elGestion.textContent = formatted;
-        }, 1000);
-    }
+        const el = document.getElementById('live-timer');
+        if (el) {
+            const timeEst = piece.tiempoEstimado || '0h';
+            el.textContent = `${formatted} / ${timeEst}`;
+        }
+
+        const elGestion = document.getElementById('gestion-live-timer');
+        if (elGestion) elGestion.textContent = formatted;
+    }, 1000);
 }
 
 function calculateCurrentSeconds(piece) {
@@ -3397,9 +3669,15 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    const formSubirPlano = document.getElementById('form-subir-plano');
+    if (formSubirPlano) {
+        formSubirPlano.onsubmit = saveNewBlueprint;
+    }
+
     // Listeners para filtros
     document.getElementById('searchPiezasInput')?.addEventListener('input', updatePiecesUI);
     document.getElementById('searchInventarioInput')?.addEventListener('input', updateInventoryUI);
+    document.getElementById('searchPlanosInput')?.addEventListener('input', updateBlueprintsUI);
     document.getElementById('filter-categoria')?.addEventListener('change', updateInventoryUI);
     document.getElementById('filter-estado')?.addEventListener('change', updateInventoryUI);
 });
