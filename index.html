@@ -1707,6 +1707,10 @@
                             <h1 class="page-title"><i class="fas fa-cogs"></i> Piezas Fabricadas - <span class="corinfar-logo">CORINFAR</span> <span class="corinfar-title">Taller</span></h1>
                         </div>
                         <div class="header-controls">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="Buscar por código..." id="searchPiezasInput">
+                            </div>
                             <button class="btn btn-success" onclick="showModal('modal-nueva-pieza')">
                                 <i class="fas fa-plus"></i> Nueva Pieza
                             </button>
@@ -1717,7 +1721,23 @@
                     </div>
                     <div class="management-container">
                         <div class="section">
-                            <p>Módulo de gestión de piezas - Contenido completo del sistema</p>
+                            <div class="table-responsive">
+                                <table id="table-piezas">
+                                    <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Nombre</th>
+                                            <th>Material</th>
+                                            <th>Tiempo</th>
+                                            <th>Máquina</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="6" style="text-align:center">Cargando piezas...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1730,13 +1750,53 @@
                             </button>
                             <h1 class="page-title"><i class="fas fa-boxes"></i> Inventario de Materiales - <span class="corinfar-logo">CORINFAR</span> <span class="corinfar-title">Taller</span></h1>
                         </div>
-                        <button class="btn btn-success">
-                            <i class="fas fa-plus"></i> Agregar Material
-                        </button>
+                        <div class="header-controls">
+                            <select id="filter-categoria" class="btn btn-filter" style="padding: 10px;">
+                                <option value="">Todas las categorías</option>
+                                <option value="Material">Material</option>
+                                <option value="Herramienta">Herramienta</option>
+                                <option value="Insumo">Insumo</option>
+                                <option value="Repuesto">Repuesto</option>
+                            </select>
+                            <select id="filter-estado" class="btn btn-filter" style="padding: 10px;">
+                                <option value="">Todos los estados</option>
+                                <option value="Disponible">Disponible</option>
+                                <option value="Stock Bajo">Stock Bajo</option>
+                                <option value="Agotado">Agotado</option>
+                            </select>
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="Filtrar por código..." id="searchInventarioInput">
+                            </div>
+                            <button class="btn btn-success" onclick="showModal('modal-nuevo-item-inventario')">
+                                <i class="fas fa-plus"></i> Agregar Material
+                            </button>
+                        </div>
                     </div>
                     <div class="management-container">
                         <div class="section">
-                            <p>Módulo de inventario - Contenido similar al de piezas</p>
+                            <div class="table-responsive">
+                                <table id="table-inventario">
+                                    <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Nombre</th>
+                                            <th>Categoría</th>
+                                            <th>Cantidad</th>
+                                            <th>Unidad</th>
+                                            <th>Mínimo</th>
+                                            <th>Costo Unit.</th>
+                                            <th>Valor Total</th>
+                                            <th>Estado</th>
+                                            <th>Ubicación</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="11" style="text-align:center">Cargando inventario...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1913,6 +1973,103 @@
         </div>
     </div>
 
+    <!-- MODAL NUEVO ITEM INVENTARIO -->
+    <div id="modal-nuevo-item-inventario" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-boxes"></i> Agregar al Inventario - <span class="corinfar-logo">CORINFAR</span></h2>
+                <button class="close-modal" onclick="closeModal('modal-nuevo-item-inventario')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-nuevo-item-inventario" style="padding: 20px;">
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <label for="inv-codigo" style="display: block; margin-bottom: 8px; font-weight: 600;">Código *</label>
+                            <input type="text" id="inv-codigo" placeholder="Ej: HCT-001, MAT-025" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                            <small style="color: var(--gray);">Prefijos sugeridos: HCT-, MAT-, INS-, PZ-</small>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="inv-nombre" style="display: block; margin-bottom: 8px; font-weight: 600;">Nombre del Item *</label>
+                            <input type="text" id="inv-nombre" placeholder="Ej: Broca Ø6.8mm, Acero 1018" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <label for="inv-categoria" style="display: block; margin-bottom: 8px; font-weight: 600;">Categoría *</label>
+                            <select id="inv-categoria" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                                <option value="">Seleccionar categoría...</option>
+                                <option value="Material">Material</option>
+                                <option value="Herramienta">Herramienta</option>
+                                <option value="Insumo">Insumo</option>
+                                <option value="Repuesto">Repuesto</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="inv-subcategoria" style="display: block; margin-bottom: 8px; font-weight: 600;">Subcategoría</label>
+                            <input type="text" id="inv-subcategoria" placeholder="Subcategoría..." style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <label for="inv-cantidad" style="display: block; margin-bottom: 8px; font-weight: 600;">Cantidad *</label>
+                            <input type="number" id="inv-cantidad" step="0.01" min="0" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="inv-unidad" style="display: block; margin-bottom: 8px; font-weight: 600;">Unidad de Medida *</label>
+                            <select id="inv-unidad" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                                <option value="">Seleccionar unidad...</option>
+                                <option value="unidad">unidad</option>
+                                <option value="kg">kg</option>
+                                <option value="m">m</option>
+                                <option value="litros">litros</option>
+                                <option value="juego">juego</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <label for="inv-minimo" style="display: block; margin-bottom: 8px; font-weight: 600;">Stock Mínimo *</label>
+                            <input type="number" id="inv-minimo" step="0.01" min="0" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                            <small style="color: var(--gray);">Alerta cuando el stock esté por debajo</small>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="inv-costo" style="display: block; margin-bottom: 8px; font-weight: 600;">Costo Unitario ($) *</label>
+                            <input type="number" id="inv-costo" step="0.01" min="0" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <label for="inv-proveedor" style="display: block; margin-bottom: 8px; font-weight: 600;">Proveedor</label>
+                            <input type="text" id="inv-proveedor" placeholder="Nombre del proveedor" style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="inv-ubicacion" style="display: block; margin-bottom: 8px; font-weight: 600;">Ubicación en Almacén</label>
+                            <input type="text" id="inv-ubicacion" placeholder="Ej: Estante A-3, Caja 5" style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label for="inv-descripcion" style="display: block; margin-bottom: 8px; font-weight: 600;">Descripción / Notas</label>
+                        <textarea id="inv-descripcion" placeholder="Detalles adicionales, especificaciones, observaciones..." style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px; min-height: 100px;"></textarea>
+                    </div>
+
+                    <div style="text-align: right;">
+                        <button type="button" class="btn btn-filter" onclick="closeModal('modal-nuevo-item-inventario')" style="margin-right: 10px;">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Guardar en Inventario
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
 
 // ========== CONFIGURACIÓN FIREBASE ==========
@@ -2066,6 +2223,7 @@ function navigateTo(pageId) {
     });
 
     if (pageId === 'inventario') updateInventoryUI();
+    if (pageId === 'piezas') updatePiecesUI();
 }
 
 function initSystem() {
@@ -2100,6 +2258,7 @@ function initSystem() {
             });
             renderWorkshopPieces(piezasKanban);
             renderRecentPieces(piezasKanban);
+            updatePiecesUI();
             updateDashboardStats();
         }, error => console.error("Error en piezasTaller:", error));
 
@@ -2542,45 +2701,135 @@ function updateDashboardStats() {
     // Stock Bajo is updated in updateInventoryUI
 }
 
+function updatePiecesUI() {
+    const tbody = document.querySelector('#table-piezas tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const searchTerm = document.getElementById('searchPiezasInput')?.value.toLowerCase() || '';
+
+    const pieces = Object.keys(piezasKanban).map(id => ({ id, ...piezasKanban[id] }));
+
+    const filteredPieces = pieces.filter(p =>
+        (p.codigo || '').toLowerCase().includes(searchTerm) ||
+        (p.nombre || '').toLowerCase().includes(searchTerm)
+    );
+
+    if (filteredPieces.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No se encontraron piezas</td></tr>';
+        return;
+    }
+
+    filteredPieces.forEach(p => {
+        const machine = maquinas[p.maquinaId] ? (maquinas[p.maquinaId].name || maquinas[p.maquinaId].nombre) : '---';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${p.codigo || '---'}</td>
+            <td>${p.nombre || '---'}</td>
+            <td>${p.material || '---'}</td>
+            <td>${p.tiempoEstimado || '---'}</td>
+            <td>${machine}</td>
+            <td>
+                <div class="action-buttons">
+                    <button class="action-btn btn-view" onclick="viewPiezaKanban('${p.id}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="action-btn btn-edit" onclick="editPiezaKanban('${p.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
 function updateInventoryUI() {
-    const container = document.querySelector('#inventario .section');
+    const tbody = document.querySelector('#table-inventario tbody');
     const alertContainer = document.querySelector('.alertas');
     const stats = document.querySelectorAll('.stat-info h3');
 
-    let html = '<div class="table-responsive"><table><thead><tr><th>Nombre</th><th>Origen</th><th>Estado</th></tr></thead><tbody>';
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const categoryFilter = document.getElementById('filter-categoria')?.value || '';
+    const statusFilter = document.getElementById('filter-estado')?.value || '';
+    const searchTerm = document.getElementById('searchInventarioInput')?.value.toLowerCase() || '';
 
     let lowStockCount = 0;
     let alertsHtml = '';
 
     const items = Object.values(tallerInventory);
-    if (items.length === 0) {
-        html += '<tr><td colspan="3" style="text-align:center">No hay piezas en el inventario CMMS</td></tr>';
+
+    const filteredItems = items.filter(item => {
+        if (item.origin === 'Workshop') return false;
+
+        const matchesCategory = !categoryFilter || item.category === categoryFilter || item.categoria === categoryFilter;
+
+        const itemStatus = item.status || item.estado || 'Disponible';
+        const matchesStatus = !statusFilter || itemStatus === statusFilter;
+
+        const itemCode = (item.code || item.codigo || '').toLowerCase();
+        const itemName = (item.name || item.nombre || '').toLowerCase();
+        const matchesSearch = !searchTerm || itemCode.includes(searchTerm) || itemName.includes(searchTerm);
+
+        return matchesCategory && matchesStatus && matchesSearch;
+    });
+
+    if (filteredItems.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center">No se encontraron artículos en el inventario</td></tr>';
     } else {
-        items.forEach(item => {
+        filteredItems.forEach(item => {
             const itemName = item.name || item.nombre || 'Sin nombre';
-            html += `
-                <tr>
-                    <td>${itemName}</td>
-                    <td>${item.origin || '---'}</td>
-                    <td>${item.status || '---'}</td>
-                </tr>
+            const itemCode = item.code || item.codigo || '---';
+            const itemCat = item.category || item.categoria || '---';
+            const itemCant = item.stock || item.cantidad || 0;
+            const itemUnidad = item.unit || item.unidad || 'unidad';
+            const itemMin = item.stockMinimo || item.minimo || 0;
+            const itemCosto = item.unitCost || item.costoUnitario || 0;
+            const itemTotal = (itemCant * itemCosto).toFixed(2);
+            const itemStatus = item.status || item.estado || 'Disponible';
+            const itemLoc = item.location || item.ubicacion || '---';
+
+            const statusBadgeClass = itemStatus === 'Stock Bajo' || itemStatus === 'Low' ? 'badge-warning' :
+                                    itemStatus === 'Agotado' || itemStatus === 'Out of stock' ? 'badge-danger' : 'badge-success';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${itemCode}</strong></td>
+                <td>${itemName}</td>
+                <td>${itemCat}</td>
+                <td>${itemCant}</td>
+                <td>${itemUnidad}</td>
+                <td>${itemMin}</td>
+                <td>$${parseFloat(itemCosto).toFixed(2)}</td>
+                <td><strong>$${itemTotal}</strong></td>
+                <td><span class="badge ${statusBadgeClass}">${itemStatus}</span></td>
+                <td>${itemLoc}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn btn-view" title="Ver"><i class="fas fa-eye"></i></button>
+                        <button class="action-btn btn-edit" title="Editar"><i class="fas fa-edit"></i></button>
+                    </div>
+                </td>
             `;
-            // Solo generar alertas para piezas que provengan del sistema de Taller
-            if (item.origin === 'Workshop') {
-                const threshold = item.stockMinimo !== undefined ? item.stockMinimo : 1;
-                if (item.status === 'Low' || item.estado === 'Bajo' || (item.stock !== undefined && item.stock < threshold)) {
-                    lowStockCount++;
-                    alertsHtml += `<div class="alerta-item" style="padding: 15px; border-left: 4px solid #f39c12; background: #fff3cd; margin-bottom: 10px; border-radius: 0 5px 5px 0;">
-                        <i class="fas fa-exclamation-triangle"></i> <strong>${itemName}:</strong> Stock Bajo
-                    </div>`;
-                }
-            }
+            tbody.appendChild(tr);
         });
     }
 
-    html += '</tbody></table></div>';
+    items.forEach(item => {
+        if (item.origin === 'Workshop') {
+            const itemName = item.name || item.nombre || 'Sin nombre';
+            const threshold = item.stockMinimo !== undefined ? item.stockMinimo : 1;
+            if (item.status === 'Low' || item.estado === 'Bajo' || (item.stock !== undefined && item.stock < threshold)) {
+                lowStockCount++;
+                alertsHtml += `<div class="alerta-item" style="padding: 15px; border-left: 4px solid #f39c12; background: #fff3cd; margin-bottom: 10px; border-radius: 0 5px 5px 0;">
+                    <i class="fas fa-exclamation-triangle"></i> <strong>${itemName}:</strong> Stock Bajo
+                </div>`;
+            }
+        }
+    });
 
-    if (container) container.innerHTML = html;
     if (alertContainer) alertContainer.innerHTML = alertsHtml || '<p>No hay alertas de inventario</p>';
     if (stats[2]) stats[2].textContent = lowStockCount;
 }
@@ -2604,6 +2853,60 @@ function showModal(id) {
 function viewWorkOrder(id) { alert('Detalle de orden: ' + id); }
 function viewPiezaKanban(id) { alert('Detalle de pieza: ' + id); }
 function editPiezaKanban(id) { alert('Editar pieza: ' + id); }
+
+function saveNewInventoryItem() {
+    const codigo = document.getElementById('inv-codigo').value;
+    const nombre = document.getElementById('inv-nombre').value;
+    const categoria = document.getElementById('inv-categoria').value;
+    const subcategoria = document.getElementById('inv-subcategoria').value;
+    const cantidad = parseFloat(document.getElementById('inv-cantidad').value);
+    const unidad = document.getElementById('inv-unidad').value;
+    const minimo = parseFloat(document.getElementById('inv-minimo').value);
+    const costo = parseFloat(document.getElementById('inv-costo').value);
+    const proveedor = document.getElementById('inv-proveedor').value;
+    const ubicacion = document.getElementById('inv-ubicacion').value;
+    const descripcion = document.getElementById('inv-descripcion').value;
+
+    if (!codigo || !nombre || !categoria || isNaN(cantidad) || !unidad) {
+        showNotification('Por favor complete los campos obligatorios', 'error');
+        return;
+    }
+
+    const newItem = {
+        code: codigo,
+        name: nombre,
+        category: categoria,
+        subCategory: subcategoria,
+        stock: cantidad,
+        unit: unidad,
+        stockMinimo: minimo,
+        unitCost: costo,
+        supplier: proveedor,
+        location: ubicacion,
+        description: descripcion,
+        status: cantidad <= minimo ? (cantidad === 0 ? 'Agotado' : 'Stock Bajo') : 'Disponible',
+        origin: 'Manual',
+        addedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    const saveBtn = document.querySelector('#form-nuevo-item-inventario button[type="submit"]');
+    const originalBtnText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    saveBtn.disabled = true;
+
+    firestore.collection(PATHS.parts).add(newItem).then(() => {
+        showNotification('Item agregado al inventario exitosamente', 'success');
+        closeModal('modal-nuevo-item-inventario');
+        document.getElementById('form-nuevo-item-inventario').reset();
+    }).catch(error => {
+        console.error("Error al guardar item:", error);
+        showNotification('Error al guardar: ' + error.message, 'error');
+    }).finally(() => {
+        saveBtn.innerHTML = originalBtnText;
+        saveBtn.disabled = false;
+    });
+}
 
 function saveNewPiece() {
     const codigo = document.getElementById('codigo').value;
@@ -2693,6 +2996,20 @@ document.addEventListener('DOMContentLoaded', () => {
             saveNewPiece();
         };
     }
+
+    const nuevoItemInvForm = document.getElementById('form-nuevo-item-inventario');
+    if (nuevoItemInvForm) {
+        nuevoItemInvForm.onsubmit = (e) => {
+            e.preventDefault();
+            saveNewInventoryItem();
+        };
+    }
+
+    // Listeners para filtros
+    document.getElementById('searchPiezasInput')?.addEventListener('input', updatePiecesUI);
+    document.getElementById('searchInventarioInput')?.addEventListener('input', updateInventoryUI);
+    document.getElementById('filter-categoria')?.addEventListener('change', updateInventoryUI);
+    document.getElementById('filter-estado')?.addEventListener('change', updateInventoryUI);
 });
 
 </script>
