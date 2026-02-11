@@ -2565,12 +2565,15 @@ function updateInventoryUI() {
                     <td>${item.status || '---'}</td>
                 </tr>
             `;
-            const threshold = item.stockMinimo !== undefined ? item.stockMinimo : 5;
-            if (item.status === 'Low' || item.estado === 'Bajo' || (item.stock !== undefined && item.stock < threshold)) {
-                lowStockCount++;
-                alertsHtml += `<div class="alerta-item" style="padding: 15px; border-left: 4px solid #f39c12; background: #fff3cd; margin-bottom: 10px; border-radius: 0 5px 5px 0;">
-                    <i class="fas fa-exclamation-triangle"></i> <strong>${itemName}:</strong> Stock Bajo
-                </div>`;
+            // Solo generar alertas para piezas que provengan del sistema de Taller
+            if (item.origin === 'Workshop') {
+                const threshold = item.stockMinimo !== undefined ? item.stockMinimo : 1;
+                if (item.status === 'Low' || item.estado === 'Bajo' || (item.stock !== undefined && item.stock < threshold)) {
+                    lowStockCount++;
+                    alertsHtml += `<div class="alerta-item" style="padding: 15px; border-left: 4px solid #f39c12; background: #fff3cd; margin-bottom: 10px; border-radius: 0 5px 5px 0;">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>${itemName}:</strong> Stock Bajo
+                    </div>`;
+                }
             }
         });
     }
