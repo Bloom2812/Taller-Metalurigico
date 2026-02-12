@@ -1224,6 +1224,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" data-page="gestion-ordenes">
+                            <i class="fas fa-tasks"></i>
+                            <span class="nav-text">Gestión de Órdenes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" data-page="inventario">
                             <i class="fas fa-boxes"></i>
                             <span class="nav-text">Inventario</span>
@@ -1699,6 +1705,48 @@
                 </div>
 
                 <!-- ========== OTRAS PÁGINAS (simplificadas) ========== -->
+                <div id="gestion-ordenes" class="page-content">
+                    <div class="page-header">
+                        <div style="display: flex; align-items: center;">
+                            <button class="btn-menu-toggle" onclick="toggleSidebar()">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <h1 class="page-title"><i class="fas fa-tasks"></i> Gestión de Órdenes - <span class="corinfar-logo">CORINFAR</span> <span class="corinfar-title">Taller</span></h1>
+                        </div>
+                        <div class="header-controls">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" placeholder="Buscar por código o técnico..." id="searchOrdersInput">
+                            </div>
+                            <button class="btn btn-primary" onclick="navigateTo('kanban')">
+                                <i class="fas fa-th-large"></i> Ver Tablero Kanban
+                            </button>
+                        </div>
+                    </div>
+                    <div class="management-container">
+                        <div class="section">
+                            <div class="table-responsive">
+                                <table id="table-gestion-ordenes">
+                                    <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Pieza</th>
+                                            <th>Estado</th>
+                                            <th>Técnico Asignado</th>
+                                            <th>Tiempo Real</th>
+                                            <th>Costo Manual ($)</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="7" style="text-align:center">Cargando gestión de órdenes...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="piezas" class="page-content">
                     <div class="page-header">
                         <div style="display: flex; align-items: center;">
@@ -1958,10 +2006,16 @@
                     </div>
 
                     <div style="display: flex; gap: 20px; margin-bottom: 30px;">
-                        <div style="flex: 2;">
+                        <div style="flex: 1;">
                             <label for="maquina-vinculo" style="display: block; margin-bottom: 8px; font-weight: 600;">Vincular a Máquina (CMMS) *</label>
                             <select id="maquina-vinculo" required style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
                                 <option value="">Cargando máquinas...</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="vinculo-plano" style="display: block; margin-bottom: 8px; font-weight: 600;">Vincular Plano Existente</label>
+                            <select id="vinculo-plano" style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px;">
+                                <option value="">Ninguno (Pasará a Diseño)</option>
                             </select>
                         </div>
                         <div style="flex: 1;">
@@ -2233,6 +2287,7 @@ var usuarioLogueado = null;
 var piezasKanban = {};
 var tallerInventory = {};
 var maquinas = {};
+var usuariosSistema = {};
 var planosBiblioteca = {};
 var storage = firebase.storage();
 
@@ -2360,6 +2415,7 @@ function navigateTo(pageId) {
     if (pageId === 'inventario') updateInventoryUI();
     if (pageId === 'piezas') updatePiecesUI();
     if (pageId === 'planos') updateBlueprintsUI();
+    if (pageId === 'gestion-ordenes') updateOrdersManagementUI();
 }
 
 function initSystem() {
@@ -2395,6 +2451,7 @@ function initSystem() {
             renderWorkshopPieces(piezasKanban);
             renderRecentPieces(piezasKanban);
             updatePiecesUI();
+            updateOrdersManagementUI();
             updateDashboardStats();
         }, error => console.error("Error en piezasTaller:", error));
 
@@ -2436,7 +2493,19 @@ function initSystem() {
                 planosBiblioteca[doc.id] = doc.data();
             });
             updateBlueprintsUI();
+            renderBlueprintsDropdown();
         }, error => console.error("Error en planos:", error));
+
+    firestore.collection(PATHS.users)
+        .onSnapshot(snapshot => {
+            usuariosSistema = {};
+            snapshot.forEach(doc => {
+                usuariosSistema[doc.id] = doc.data();
+            });
+            if (document.getElementById('gestion-ordenes').classList.contains('active')) {
+                updateOrdersManagementUI();
+            }
+        }, error => console.error("Error en usuarios:", error));
 
     setupNavigation();
     initKanbanDragAndDrop();
@@ -2468,6 +2537,29 @@ function renderSolicitudes(workOrders) {
     // Update Dashboard "Pedidos Pendientes"
     const stats = document.querySelectorAll('.stat-info h3');
     if (stats[3]) stats[3].textContent = pendingCount;
+}
+
+function renderBlueprintsDropdown() {
+    console.log("Actualizando dropdown de planos...", planosBiblioteca);
+    const select = document.getElementById('vinculo-plano');
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">Ninguno (Pasará a Diseño)</option>';
+
+    const planos = Object.keys(planosBiblioteca).map(id => ({ id, ...planosBiblioteca[id] }));
+    planos.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+    planos.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.textContent = `${p.nombre} (${p.codigoPieza || 'S/C'})`;
+        select.appendChild(option);
+    });
+
+    if (currentValue && planosBiblioteca[currentValue]) {
+        select.value = currentValue;
+    }
 }
 
 function renderMachinesList() {
@@ -2629,6 +2721,11 @@ function createCardHTML(id, data, type) {
                 <span>${type === 'solicitudes' ? (data.fecha || 'Pendiente') : (data.operario || 'Sin asignar')}</span>
             </div>
             <div class="card-actions">
+                ${data.disenoUrl ?
+                    `<a href="${data.disenoUrl}" target="_blank" class="action-btn-small" title="Ver Plano" onclick="event.stopPropagation();" style="background: var(--design); color: white;">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>` : ''
+                }
                 ${type === 'solicitudes' ?
                     `<button class="action-btn-small" title="Aceptar" onclick="event.stopPropagation(); acceptWorkOrder('${id}')">
                         <i class="fas fa-check"></i>
@@ -3030,6 +3127,117 @@ function deleteBlueprint(id, storagePath) {
         });
 }
 
+function updateOrdersManagementUI() {
+    const tbody = document.querySelector('#table-gestion-ordenes tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const searchTerm = document.getElementById('searchOrdersInput')?.value.toLowerCase() || '';
+    const pieces = Object.keys(piezasKanban).map(id => ({ id, ...piezasKanban[id] }));
+
+    const filtered = pieces.filter(p =>
+        (p.codigo || '').toLowerCase().includes(searchTerm) ||
+        (p.nombre || '').toLowerCase().includes(searchTerm) ||
+        (p.leadTechnician || '').toLowerCase().includes(searchTerm)
+    );
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No se encontraron piezas</td></tr>';
+        return;
+    }
+
+    // Sort: Active ones first, then by date
+    filtered.sort((a, b) => {
+        const aActive = a.estado !== 'entregado' && a.estado !== 'terminado';
+        const bActive = b.estado !== 'entregado' && b.estado !== 'terminado';
+        if (aActive && !bActive) return -1;
+        if (!aActive && bActive) return 1;
+        return (b.fechaInicio || '').localeCompare(a.fechaInicio || '');
+    });
+
+    filtered.forEach(p => {
+        const tr = document.createElement('tr');
+
+        // Select for assigned user
+        let userOptions = '<option value="">Sin asignar</option>';
+        Object.keys(usuariosSistema).forEach(uid => {
+            const u = usuariosSistema[uid];
+            const selected = p.assignedUserId === uid ? 'selected' : '';
+            userOptions += `<option value="${uid}" ${selected}>${u.name || u.email}</option>`;
+        });
+
+        const timeReal = formatTime(calculateCurrentSeconds(p));
+
+        let statusOptions = '';
+        const states = [
+            {id: 'design', label: 'Diseño'},
+            {id: 'fabricacion', label: 'Fabricación'},
+            {id: 'control', label: 'Control'},
+            {id: 'terminado', label: 'Terminado'},
+            {id: 'entregado', label: 'Entregado'}
+        ];
+        states.forEach(s => {
+            statusOptions += `<option value="${s.id}" ${p.estado === s.id ? 'selected' : ''}>${s.label}</option>`;
+        });
+
+        tr.innerHTML = `
+            <td><strong>${p.codigo || '---'}</strong></td>
+            <td>${p.nombre}</td>
+            <td>
+                <select onchange="updatePieceStatus('${p.id}', this.value)" style="padding: 5px; border-radius: 5px; border: 1px solid #ddd; background: var(--${p.estado}); color: white; font-weight: 600;">
+                    ${statusOptions}
+                </select>
+            </td>
+            <td>
+                <select onchange="assignUserToPiece('${p.id}', this.value)" style="padding: 5px; border-radius: 5px; border: 1px solid #ddd; width: 100%;">
+                    ${userOptions}
+                </select>
+            </td>
+            <td>${timeReal}</td>
+            <td>
+                <input type="number" value="${p.costoManual || 0}" step="0.01"
+                       onchange="updatePieceCost('${p.id}', this.value)"
+                       style="padding: 5px; border-radius: 5px; border: 1px solid #ddd; width: 80px;">
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <button class="action-btn btn-view" onclick="viewPiezaKanban('${p.id}')" title="Ver Detalle">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="action-btn btn-edit" onclick="showModal('modal-gestion-trabajo'); currentViewingPieceId='${p.id}'; initGestionTrabajo('${p.id}')" title="Gestionar Trabajo">
+                        <i class="fas fa-tasks"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function assignUserToPiece(pieceId, userId) {
+    const userName = userId ? (usuariosSistema[userId].name || usuariosSistema[userId].email) : 'Sin asignar';
+    firestore.collection(PATHS.workshopPieces).doc(pieceId).update({
+        assignedUserId: userId || null,
+        leadTechnician: userName // Keep sync with existing field
+    }).then(() => {
+        showNotification('Técnico asignado correctamente', 'success');
+    }).catch(error => {
+        console.error("Error al asignar técnico:", error);
+        showNotification('Error al asignar técnico', 'error');
+    });
+}
+
+function updatePieceCost(pieceId, cost) {
+    firestore.collection(PATHS.workshopPieces).doc(pieceId).update({
+        costoManual: parseFloat(cost) || 0
+    }).then(() => {
+        showNotification('Costo actualizado', 'success');
+    }).catch(error => {
+        console.error("Error al actualizar costo:", error);
+        showNotification('Error al actualizar costo', 'error');
+    });
+}
+
 function updatePiecesUI() {
     const tbody = document.querySelector('#table-piezas tbody');
     if (!tbody) return;
@@ -3194,6 +3402,7 @@ function showModal(id) {
         // Si el modal es el de nueva pieza o subir plano, asegurar que las máquinas estén cargadas
         if (id === 'modal-nueva-pieza' || id === 'modal-subir-plano') {
             renderMachinesList();
+            if (id === 'modal-nueva-pieza') renderBlueprintsDropdown();
         }
         if (id === 'modal-gestion-trabajo' && currentViewingPieceId) {
             initGestionTrabajo(currentViewingPieceId);
@@ -3575,12 +3784,21 @@ function saveNewPiece() {
     const material = document.getElementById('material').value;
     const tiempoEstimado = document.getElementById('tiempo-estimado').value;
     const maquinaId = document.getElementById('maquina-vinculo').value;
+    const planoId = document.getElementById('vinculo-plano').value;
     const stockMin = parseInt(document.getElementById('stock-minimo').value) || 0;
     const stockMax = parseInt(document.getElementById('stock-maximo').value) || 0;
 
     if (!codigo || !nombre || !material || !tiempoEstimado || !maquinaId) {
         showNotification('Por favor complete los campos obligatorios', 'error');
         return;
+    }
+
+    let disenoUrl = null;
+    let initialStatus = 'design';
+
+    if (planoId && planosBiblioteca[planoId]) {
+        disenoUrl = planosBiblioteca[planoId].fileUrl;
+        initialStatus = 'fabricacion';
     }
 
     const newPiece = {
@@ -3590,9 +3808,11 @@ function saveNewPiece() {
         material,
         tiempoEstimado: tiempoEstimado + 'h',
         maquinaId,
+        planoId: planoId || null,
+        disenoUrl,
         stockMinimo: stockMin,
         stockMaximo: stockMax,
-        estado: 'design',
+        estado: initialStatus,
         progreso: 0,
         fechaInicio: new Date().toLocaleDateString(),
         operario: 'Sin asignar',
@@ -3678,6 +3898,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Listeners para filtros
     document.getElementById('searchPiezasInput')?.addEventListener('input', updatePiecesUI);
+    document.getElementById('searchOrdersInput')?.addEventListener('input', updateOrdersManagementUI);
     document.getElementById('searchInventarioInput')?.addEventListener('input', updateInventoryUI);
     document.getElementById('searchPlanosInput')?.addEventListener('input', updateBlueprintsUI);
     document.getElementById('filter-categoria')?.addEventListener('change', updateInventoryUI);
